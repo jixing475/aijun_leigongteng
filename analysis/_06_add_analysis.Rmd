@@ -1,0 +1,47 @@
+---
+title: "06_add_analysis"
+author: "zero"
+date: "4/11/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	results = "hide"
+)
+```
+## 01 library packages
+```{r}
+library(tidyverse)
+source("~/Documents/_14_tmp/🏃leigongteng/02_scripts/some_function.R")
+```
+
+###Load data:
+
+```{r load-data}
+library(here)
+load("../01_data/clean_data.RData")
+
+inner_join(clean_baseline, group, by="id") %>% 
+  .[["id"]] %>% 
+  setdiff(names(flow_up_list), .) #多出来的那个人的ID
+
+fl_time_median_124 <- flow_up_list[-which(names(flow_up_list)=="45")]
+
+get_fl_time <- function(df) {
+  df %>%
+  .[["treat_month"]] %>%
+  last()
+}
+library(purrr)
+#====median flow up time====
+map_df(fl_time_median_124,get_fl_time)  %>% 
+  t() %>% 
+  as.vector() %>% median()
+
+```
+
+

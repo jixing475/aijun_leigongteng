@@ -1,0 +1,133 @@
+---
+title: "figures"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+[Correlation Analyses in R](http://www.sthda.com/english/wiki/print.php?id=112)
+
+_Correlation matrix analysis is very useful to study dependences or associations between variables_
+
+## import library
+```{r include=FALSE}
+library(tidyverse)
+library(flextable)
+library(ggpubr)
+library('ReporteRs')
+library(Cairo)
+source("../02_scripts/some_function.R")
+```
+
+##load data
+```{r}
+load("../01_data/clean_data.RData")
+```
+
+```{r}
+bind_unit <- 
+  data.frame(stringsAsFactors=FALSE,
+     treat_month = c(27L, 33L, 39L, 45L, 51L, 57L),
+          median = c(NA, NA, NA, NA, NA, NA),
+               n = c(NA, NA, NA, NA, NA, NA),
+           group = c("12 months", "12 months", "12 months", "12 months", "12 months",
+                     "12 months")
+  )
+```
+
+# SCreatinine
+```{r}
+#overall
+median_overall <- 
+  flow_up %>% 
+  filter(flow_up$rep_id!="45") %>% #45 号病人的随访情况太少
+  filter(!is.na(SCreatinine)) %>% 
+  group_by(treat_month) %>% 
+  summarise(median= median(SCreatinine, na.rm = TRUE),
+            n=length(SCreatinine),
+            group="Overall") 
+
+#====12 month====
+median_12 <- 
+  flow_up %>%
+  filter(flow_up$rep_id != "45") %>%
+  filter(rep_id %in% get_idx(m = "12")) %>%
+  filter(treat_month <= 12) %>% 
+  filter(!is.na(SCreatinine)) %>%
+  group_by(treat_month) %>%
+  summarise(median = median(SCreatinine, na.rm = TRUE),
+            n=length(SCreatinine),
+            group="12 months") %>% 
+  rbind(bind_unit)
+
+#====36 month====
+median_36 <- 
+  flow_up %>%
+  filter(flow_up$rep_id != "45") %>%
+  filter(rep_id %in% get_idx(m = "36")) %>%
+  filter(treat_month <= 36) %>% 
+  filter(!is.na(SCreatinine)) %>%
+  group_by(treat_month) %>%
+  summarise(median = median(SCreatinine, na.rm = TRUE),
+            n=length(SCreatinine),
+            group="36 months")
+
+#====60 month 10 people====
+median_60 <- 
+  flow_up %>%
+  filter(flow_up$rep_id != "45") %>%
+  filter(rep_id %in% get_idx(m = "60")) %>%
+  filter(treat_month <= 60) %>% 
+  filter(!is.na(SCreatinine)) %>%
+  group_by(treat_month) %>%
+  summarise(median = median(SCreatinine, na.rm = TRUE),
+            n= length(SCreatinine),
+            group="60 months")
+```
+
+#rbind data
+```{r}
+total_median_data <-
+  median_overall %>%
+  rbind(median_12) %>%
+  rbind(median_36) %>%
+  rbind(median_60)
+total_median_data$group  <- factor(total_median_data$group,levels = c("Overall","12 months","36 months","60 months"))
+```
+
+
+```{r} 
+panel_labs <- c(median_overall$n[1],median_12$n[1],median_36$n[1],median_60$n[1])
+p <-
+  ggline(total_median_data, "treat_month", "median",facet.by = "group",
+        plot_type = "l", xlab = "Months", ylab = "Serum creatinine (mg/dl)",
+        panel.labs = list(group = c(paste0("Overall (n=",panel_labs[1],")"), 
+                                    paste0("12 months (n=",panel_labs[2],")"),
+                                    paste0("36 months (n=",panel_labs[3],")"),
+                                    paste0("60 months (n=",panel_labs[4],")")))) 
+
+
+```
+
+## export to ppt
+###single pptx file👍
+```{r}
+library('ReporteRs')
+system("java -version")
+options( "ReporteRs-fontsize" = 12, 
+         "ReporteRs-default-font" = "Times")
+#准备footnote and plot
+
+#new pptx
+doc <- pptx()
+slide.layouts(doc)
+doc <- addSlide(doc, "Two Content")
+doc <- addPlot(doc,function()
+          print(p, newpage = FALSE), # Print the survival curves in the powerpoint
+          vector.graphic = TRUE)   # Make it editable
+writeDoc(doc, file = "figures/Median_Serum_creatinine.pptx")
+```
+
+

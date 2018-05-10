@@ -1,0 +1,247 @@
+---
+title: "figures"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+[Correlation Analyses in R](http://www.sthda.com/english/wiki/print.php?id=112)
+
+_Correlation matrix analysis is very useful to study dependences or associations between variables_
+
+## import library
+```{r include=FALSE}
+library(tidyverse)
+library(flextable)
+library(ggpubr)
+```
+
+##load data
+```{r}
+load("../01_data/clean_data.RData")
+source("../02_scripts/some_function.R")
+```
+
+#create advent
+```{r}
+advent <- tibble::tribble(
+   ~id,                 ~advent,
+   16L,                   "ALT",
+   20L,                   "ALT",
+   21L,                   "ALT",
+   27L,                   "ALT",
+   28L,                   "ALT",
+   34L,                   "ALT",
+   55L,                   "ALT",
+   57L,                   "ALT",
+   58L,                   "ALT",
+   69L,                   "ALT",
+   84L,                   "ALT",
+   93L,                   "ALT",
+   23L,           "blood_sugar",
+   28L,           "blood_sugar",
+   41L,           "blood_sugar",
+   51L,           "blood_sugar",
+   55L,           "blood_sugar",
+   61L,           "blood_sugar",
+   32L,                  "dead",
+   36L,                  "dead",
+   46L,                  "ESRD",
+  102L, "Femoral_head_necrosis",
+    9L,             "infection",
+   22L,             "infection",
+   32L,             "infection",
+   55L,             "infection",
+   83L,             "infection",
+    1L,                    "no",
+    2L,                    "no",
+    3L,                    "no",
+    4L,                    "no",
+    5L,                    "no",
+    6L,                    "no",
+    7L,                    "no",
+    8L,                    "no",
+   10L,                    "no",
+   11L,                    "no",
+   12L,                    "no",
+   13L,                    "no",
+   14L,                    "no",
+   15L,                    "no",
+   17L,                    "no",
+   18L,                    "no",
+   19L,                    "no",
+   24L,                    "no",
+   25L,                    "no",
+   26L,                    "no",
+   29L,                    "no",
+   30L,                    "no",
+   31L,                    "no",
+   33L,                    "no",
+   35L,                    "no",
+   37L,                    "no",
+   38L,                    "no",
+   39L,                    "no",
+   40L,                    "no",
+   42L,                    "no",
+   43L,                    "no",
+   44L,                    "no",
+   45L,                    "no",
+   47L,                    "no",
+   48L,                    "no",
+   49L,                    "no",
+   50L,                    "no",
+   52L,                    "no",
+   53L,                    "no",
+   54L,                    "no",
+   56L,                    "no",
+   59L,                    "no",
+   60L,                    "no",
+   62L,                    "no",
+   63L,                    "no",
+   64L,                    "no",
+   65L,                    "no",
+   66L,                    "no",
+   67L,                    "no",
+   68L,                    "no",
+   70L,                    "no",
+   71L,                    "no",
+   72L,                    "no",
+   73L,                    "no",
+   74L,                    "no",
+   75L,                    "no",
+   76L,                    "no",
+   77L,                    "no",
+   78L,                    "no",
+   79L,                    "no",
+   80L,                    "no",
+   81L,                    "no",
+   82L,                    "no",
+   85L,                    "no",
+   86L,                    "no",
+   87L,                    "no",
+   88L,                    "no",
+   89L,                    "no",
+   90L,                    "no",
+   91L,                    "no",
+   92L,                    "no",
+   94L,                    "no",
+   95L,                    "no",
+   96L,                    "no",
+   97L,                    "no",
+   98L,                    "no",
+   99L,                    "no",
+  100L,                    "no",
+  101L,                    "no",
+  103L,                    "no",
+  104L,                    "no",
+  105L,                    "no",
+  106L,                    "no",
+  107L,                    "no",
+  108L,                    "no",
+  109L,                    "no",
+  110L,                    "no",
+  111L,                    "no",
+  112L,                    "no",
+  114L,                    "no",
+  115L,                    "no",
+  116L,                    "no",
+  117L,                    "no",
+  118L,                    "no",
+  119L,                    "no",
+  120L,                    "no",
+  121L,                    "no",
+  122L,                    "no",
+  123L,                    "no",
+  124L,                    "no",
+  125L,                    "no",
+  126L,                    "no",
+  127L,                    "no",
+  128L,                    "no",
+  129L,                    "no",
+  130L,                    "no",
+  131L,                    "no",
+  132L,                    "no"
+  )
+
+```
+
+#join
+```{r}
+advent$id <- as.character(advent$id)
+ad_vent <-
+  dplyr::full_join(advent, group, by = "id") %>%
+  select(id, advent, group) %>%
+  filter(!is.na(group))
+```
+
+```{r}
+# grouped by = advent,group
+ad_vent %>%
+  group_by(advent,group) %>%
+  summarise(n=n())
+```
+
+```{r}
+ad_vent_table <- data.frame(stringsAsFactors=FALSE,
+   Serious.Adverse.Event = c("ALT", "ESRD", "Femoral_head_necrosis",
+                             "blood_sugar", "dead", "infection", "Total"),
+                 Overall = c(12L, 1L, 1L, 6L, 1L, 4L, 25L),
+      Complete.Remission = c(11L, 0L, 0L, 6L, 0L, 4L, 21L),
+       Partial.Remission = c(1L, 0L, 1L, 0L, 0L, 0L, 2L),
+            No.Remission = c(0L, 1L, 0L, 0L, 1L, 0L, 2L)
+)
+
+```
+
+```{r}
+mytbl <- tibble::tribble(
+   ~Serious.Adverse.Event, ~Overall, ~Complete.Remission, ~Partial.Remission, ~No.Remission,
+                    "ALT",       12,                  11,                  1,             0,
+                   "ESRD",        1,                   0,                  0,             1,
+  "Femoral_head_necrosis",        1,                   0,                  1,             0,
+            "blood_sugar",        6,                   6,                  0,             0,
+                   "dead",        1,                   0,                  0,             1,
+              "infection",        4,                   4,                  0,             0,
+                  "Total",       25,                  21,                  2,             2
+  )
+```
+
+##data frame to word
+```{r}
+library(ReporteRs)
+library(magrittr)
+
+#set option
+options( "ReporteRs-fontsize" = 12, 
+         "ReporteRs-default-font" = "Times")
+
+#=====准备文本和表格=====
+
+T1_title <-
+  pot("Table 2. ", textProperties(color = "black", font.weight = "bold")) +
+  "Patients with at least one serious adverse event in the study group as a whole (overall) and according to disease outcome (complete, partial, or no remission)"
+  
+TableOne <- mytbl
+MyFTable <- 
+TableOne%>%
+    # 设置字体
+    FlexTable(header.cell.props = cellProperties( background.color = "#DDDDDD"),
+              header.text.props = textBold(color = "black"),
+              add.rownames = FALSE ) %>%
+    #设置边界
+    setFlexTableBorders(inner.vertical = borderNone(),
+                        inner.horizontal = borderNone(),
+                        outer.vertical = borderNone(),
+                        outer.horizontal = borderProperties( color = "black",style = "solid", width = 2 )) %>% 
+    #斑马线
+    setZebraStyle(odd = "#FFFFFF", even = "#FFFFFF")
+
+#写入 word
+doc <- docx()
+doc <- addParagraph(doc, T1_title)
+doc <- addFlexTable(doc, MyFTable)
+writeDoc(doc, file = "../03_analysis/table/adverse_event.docx")
+```
+

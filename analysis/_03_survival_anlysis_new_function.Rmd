@@ -1,0 +1,340 @@
+---
+title: "Survival Analysis"
+output: 
+  html_document:
+    toc: true
+    toc_float: yes
+    toc_depth: 3
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,#show code and output
+	message = FALSE,
+	warning = FALSE,
+	engine.path="/Users/zero/anaconda3/bin/python"
+)
+```
+
+[Correlation Analyses in R](http://www.sthda.com/english/wiki/print.php?id=112)
+
+_Correlation matrix analysis is very useful to study dependences or associations between variables_
+
+## import library
+```{r include=FALSE}
+library(tidyverse)
+library(flextable)
+library(ggpubr)
+
+library(survival)
+library("survminer")
+library(Cairo)
+library(here)
+source(here("code/some_function.R"))
+```
+
+## Load data
+```{r}
+figure_list <- list()
+load(here("data/clean_data.RData"))
+```
+
+
+## Create survial plot
+```{r}
+#Complete or Partial remission 
+#Complete remission 
+#Partial remission
+
+surv_CPR <-
+  data.frame(
+    id = names(flow_up_list),
+    CR_time = flow_up_list %>% map( ~ to_CR(.x)) %>% unlist(),
+    PR_time = flow_up_list %>% map( ~ to_PR(.x)) %>% unlist(),
+    flow_time = flow_up_list %>% map( ~ fl_time(.x)) %>% unlist(),
+    relapse_time = flow_up_list %>% map( ~ too_relapse(.x)) %>% unlist()
+  ) %>% 
+  mutate(group = if_else(CR_time == 0 & PR_time == 0, "NR", "PCR")) %>% 
+  mutate(time = case_when(
+    group == "PCR" ~ choose_time(PR_time, CR_time),
+    group == "NR" ~ flow_time
+  )) %>% 
+  mutate(status = if_else(group == "NR", 1, 2)) %>% 
+  mutate(surv_group="Complete or Partial remission") %>% 
+  filter(id!="45")
+
+#CR 
+surv_CR <-
+  data.frame(
+    id = names(flow_up_list),
+    CR_time = flow_up_list %>% map( ~ to_CR(.x)) %>% unlist(),
+    PR_time = flow_up_list %>% map( ~ too_PR(.x)) %>% unlist(),
+    flow_time = flow_up_list %>% map( ~ fl_time(.x)) %>% unlist(),
+    relapse_time = flow_up_list %>% map( ~ too_relapse(.x)) %>% unlist()
+  ) %>% 
+  mutate(group = if_else(CR_time > 0, "CR", "NR")) %>%
+  mutate(time = case_when(
+    group == "CR" ~ CR_time,
+    group == "NR" ~ flow_time))%>% 
+  mutate(status = if_else(group == "CR", 2, 1)) %>% 
+  mutate(surv_group="Complete remission") %>% 
+  filter(id!="45")
+
+#PR 
+surv_PR <-
+  data.frame(
+    id = names(flow_up_list),
+    CR_time = flow_up_list %>% map( ~ to_CR(.x)) %>% unlist(),
+    PR_time = flow_up_list %>% map( ~ too_PR(.x)) %>% unlist(),
+    flow_time = flow_up_list %>% map( ~ fl_time(.x)) %>% unlist(),
+    relapse_time = flow_up_list %>% map( ~ too_relapse(.x)) %>% unlist()
+  ) %>% 
+  mutate(group = if_else(PR_time > 0, "PR", "NR")) %>%
+  mutate(time = case_when(
+    group == "PR" ~ PR_time,
+    group == "NR" ~ flow_time))%>% 
+  mutate(status = if_else(group == "PR", 2, 1)) %>% 
+  mutate(surv_group="Partial remission") %>% 
+  filter(id!="45")
+
+#relapse
+relapse <- 
+data.frame(
+    id = names(flow_up_list),
+    CR_time = flow_up_list %>% map( ~ to_CR(.x)) %>% unlist(),
+    PR_time = flow_up_list %>% map( ~ too_PR(.x)) %>% unlist(),
+    flow_time = flow_up_list %>% map( ~ fl_time(.x)) %>% unlist(),
+    relapse_time = flow_up_list %>% map( ~ too_relapse(.x)) %>% unlist()
+  ) %>% 
+  mutate(group = if_else(relapse_time > 0, "relapse", "other")) %>%
+  mutate(time = case_when(
+    group == "relapse" ~ relapse_time,
+    group == "other" ~ flow_time))%>% 
+  mutate(status = if_else(group == "relapse", 2, 1)) %>% 
+  mutate(surv_group="Relapse") %>% 
+  filter(id!="45")
+
+
+
+surv_tidy <- 
+  surv_CPR %>% 
+  bind_rows(surv_CR) %>% 
+  bind_rows(surv_PR)
+#surv_tidy  <- 
+#  inner_join(surv_tidy,clean_baseline) %>% 
+#  dplyr::select(group, time, status, surv_group) 
+
+fit <- survfit(Surv(time, status) ~ surv_group, data = surv_tidy) 
+print(fit)
+summary(fit)
+```
+
+## <strong style="color: darkred;">Get 25% 75% event time</strong> 
+```{r}
+get_event_time <- function(df){
+  fit <- survfit(Surv(time, status) ~ surv_group, data = df)
+  time <- prop_surv <- summary(fit)  %>% .$time
+  prop_surv <- summary(fit)  %>% .$surv 
+  prop_event <- 1-prop_surv
+  cbind(time,prop_event,prop_surv)  %>% 
+    as.data.frame()
+}
+
+print("surv_CPR")
+#surv_CPR
+surv_CPR %>%
+  get_event_time() %>%
+  filter(prop_event >= 0.25 & prop_event < 0.5) %>% #25%
+  .[1,]
+surv_CPR %>%
+  get_event_time() %>%
+  filter(prop_event >= .5 & prop_event < .75)  %>% #50%
+  .[1,]
+surv_CPR %>%
+  get_event_time() %>%
+  filter(prop_event >= .75)  %>% #75%
+  .[1,]
+
+print("surv_CR")
+#surv_CR
+surv_CR %>%
+  get_event_time() %>%
+  filter(prop_event >= 0.25 & prop_event < 0.5) %>% #25%
+  .[1,]
+surv_CR %>%
+  get_event_time() %>%
+  filter(prop_event >= .5 & prop_event < .75)  %>% #50%
+  .[1,]
+surv_CR %>%
+  get_event_time() %>%
+  filter(prop_event >= .75)  %>% #75%
+  .[1,]
+print("surv_PR")
+#surv_PR
+surv_PR %>%
+  get_event_time() %>%
+  filter(prop_event >= 0.25 & prop_event < 0.5) %>% #25%
+  .[1,]
+surv_PR %>%
+  get_event_time() %>%
+  filter(prop_event >= .5 & prop_event < .75)  %>% #50%
+  .[1,]
+surv_PR %>%
+  get_event_time() %>%
+  filter(prop_event >= .75)  %>% #75%
+  .[1,]
+
+```
+
+
+
+##<strong style="color: darkred;"> Create plot</strong> 
+```{r}
+# Change color, linetype by strata, risk.table color by strata
+p_all <- 
+ggsurvplot(
+  fit,
+  pval = TRUE,
+  conf.int = FALSE,
+  risk.table = "abs_pct",
+  risk.table.col="surv_group",
+  risk.table.y.text.col=TRUE,
+  risk.table.y.text = FALSE,
+  #linetype = "surv_group",
+  #ncensor.plot =TRUE,
+  surv.median.line = "hv",
+  legend.labs = c("Complete or Partial remission", "Complete remission","Partial remission"),
+  ggtheme = theme_classic(),
+  palette = c("black", "black","black"),
+  xlab = "Time in months",
+  ylab = "Patients with event(%)",
+  break.time.by = 6,
+  fun = "event"
+)
+```
+
+## Plot CPR
+```{r}
+plot_CPR <- 
+ggsurvplot(
+  survfit(Surv(time, status) ~ surv_group, data = surv_CPR),
+  pval = TRUE,
+  conf.int = FALSE,
+  risk.table = "abs_pct",
+  #linetype = "surv_group",
+  #ncensor.plot =TRUE,
+  surv.median.line = "hv",
+  #legend.labs = c("Complete or Partial remission"),
+  ggtheme = theme_classic(),
+  xlab = "Time in months",
+  ylab = "Patients with event(%)",
+  break.time.by = 6,
+  fun = "event"
+)
+```
+
+## Plot CR
+```{r}
+plot_CR <- 
+ggsurvplot(
+  survfit(Surv(time, status) ~ surv_group, data = surv_CR),
+  pval = TRUE,
+  conf.int = FALSE,
+  risk.table = "abs_pct",
+  #linetype = "surv_group",
+  #ncensor.plot =TRUE,
+  surv.median.line = "hv",
+  #legend.labs = c("Complete remission"),
+  ggtheme = theme_classic(),
+  xlab = "Time in months",
+  ylab = "Patients with event(%)",
+  break.time.by = 6,
+  fun = "event"
+)
+```
+
+## Plot PR
+```{r}
+plot_PR <- 
+ggsurvplot(
+  survfit(Surv(time, status) ~ surv_group, data = surv_PR),
+  pval = TRUE,
+  conf.int = FALSE,
+  risk.table = "abs_pct",
+  #linetype = "surv_group",
+  #ncensor.plot =TRUE,
+  surv.median.line = "hv",
+  #legend.labs = c("Complete remission"),
+  ggtheme = theme_classic(),
+  xlab = "Time in months",
+  ylab = "Patients with event(%)",
+  break.time.by = 6,
+  fun = "event"
+)
+```
+
+## Plot relapse
+```{r}
+plot_relapse <- 
+ggsurvplot(
+  survfit(Surv(time, status) ~ surv_group, data = relapse),
+  pval = TRUE,
+  conf.int = FALSE,
+  risk.table = "abs_pct",
+  #linetype = "surv_group",
+  #ncensor.plot =TRUE,
+  surv.median.line = "hv",
+  #legend.labs = c("Complete remission"),
+  ggtheme = theme_classic(),
+  xlab = "Time in months",
+  ylab = "Patients with event(%)",
+  break.time.by = 6,
+  fun = "event"
+)
+```
+
+
+## <strong style="color: darkred;">EXPORT To PPT</strong> 
+
+###Single pptx file👍
+```{r eval=FALSE, include=TRUE}
+library('ReporteRs')
+system("java -version")
+options( "ReporteRs-fontsize" = 12, 
+         "ReporteRs-default-font" = "Times")
+#准备footnote and plot
+fig01_footnote_01 <- 
+  pot("Figure 1. ", textProperties(font.weight = "bold")) + "Kaplan–Meier curves for the percentages of participants with"
+#new pptx
+doc <- pptx()
+slide.layouts(doc)
+doc <- addSlide(doc, "Two Content")
+doc <- addPlot(doc,function()
+          print(p_all, newpage = FALSE), # Print the survival curves in the powerpoint
+          vector.graphic = TRUE)   # Make it editable
+#plot_CPR
+doc <- addSlide(doc, "Two Content")
+doc <- addPlot(doc,function()
+          print(plot_CPR, newpage = FALSE), # Print the survival curves in the powerpoint
+          vector.graphic = TRUE) 
+
+doc <- addSlide(doc, "Two Content")
+doc <- addPlot(doc,function()
+          print(plot_CR, newpage = FALSE), # Print the survival curves in the powerpoint
+          vector.graphic = TRUE) 
+
+doc <- addSlide(doc, "Two Content")
+doc <- addPlot(doc,function()
+          print(plot_PR, newpage = FALSE), # Print the survival curves in the powerpoint
+          vector.graphic = TRUE) 
+
+doc <- addSlide(doc, "Two Content")
+doc <- addPlot(doc,function()
+          print(plot_relapse, newpage = FALSE), # Print the survival curves in the powerpoint
+          vector.graphic = TRUE) 
+
+writeDoc(doc, file = here("output/figures/editable-survival-curves.pptx"))
+```
+
+
+
+

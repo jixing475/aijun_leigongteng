@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+
+
+<title>Survival Analysis</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-4.5.0/css/font-awesome.min.css" rel="stylesheet" />
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+</script>
+
+<!-- code folding -->
+
+
+
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_').toLowerCase();
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+  padding-left: 25px;
+  text-indent: 0;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row-fluid">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">aijun_leigongteng</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/jdblischak/workflowr">
+    <span class="fa fa-github"></span>
+     
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">Survival Analysis</h1>
+
+</div>
+
+
+<p><strong>Last updated:</strong> 2018-05-10</p>
+<strong>workflowr checks:</strong> <small>(Click a bullet for more information)</small>
+<ul>
+<li>
+<p><details> <summary> <strong style="color:red;">✖</strong> <strong>R Markdown file:</strong> uncommitted changes </summary> The R Markdown is untracked by Git. To know which version of the R Markdown file created these results, you’ll want to first commit it to the Git repo. If you’re still working on the analysis, you can ignore this warning. When you’re finished, you can run <code>wflow_publish</code> to commit the R Markdown file and build the HTML.</p>
+</details>
+</li>
+<li>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Environment:</strong> empty </summary></p>
+<p>Great job! The global environment was empty. Objects defined in the global environment can affect the analysis in your R Markdown file in unknown ways. For reproduciblity it’s best to always run the code in an empty environment.</p>
+</details>
+</li>
+<li>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Seed:</strong> <code>set.seed(20180510)</code> </summary></p>
+<p>The command <code>set.seed(20180510)</code> was run prior to running the code in the R Markdown file. Setting a seed ensures that any results that rely on randomness, e.g. subsampling or permutations, are reproducible.</p>
+</details>
+</li>
+<li>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Session information:</strong> recorded </summary></p>
+<p>Great job! Recording the operating system, R version, and package versions is critical for reproducibility.</p>
+</details>
+</li>
+<li>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/jixing475/aijun_leigongteng/tree/3f7c542b3703f26dbca35d9e98bf78dc32adf57a" target="_blank">3f7c542</a> </summary></p>
+Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
+<pre><code>
+Ignored files:
+    Ignored:    .DS_Store
+    Ignored:    .Rhistory
+    Ignored:    .Rproj.user/
+    Ignored:    data/.DS_Store
+    Ignored:    docs/.DS_Store
+    Ignored:    output/.DS_Store
+
+Untracked files:
+    Untracked:  analysis/_03_survival_anlysis_new_function.Rmd
+    Untracked:  output/figures/
+    Untracked:  output/table/
+
+Unstaged changes:
+    Modified:   analysis/_02_TableOne.Rmd
+
+</code></pre>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes. </details>
+</li>
+</ul>
+<hr />
+<p><a href="http://www.sthda.com/english/wiki/print.php?id=112">Correlation Analyses in R</a></p>
+<p><em>Correlation matrix analysis is very useful to study dependences or associations between variables</em></p>
+<div id="import-library" class="section level2">
+<h2>import library</h2>
+</div>
+<div id="load-data" class="section level2">
+<h2>Load data</h2>
+<pre class="r"><code>figure_list &lt;- list()
+dir.create(here(&quot;output/figures&quot;))
+load(here(&quot;data/clean_data.RData&quot;))</code></pre>
+</div>
+<div id="create-survial-plot" class="section level2">
+<h2>Create survial plot</h2>
+<pre class="r"><code>#Complete or Partial remission 
+#Complete remission 
+#Partial remission
+
+surv_CPR &lt;-
+  data.frame(
+    id = names(flow_up_list),
+    CR_time = flow_up_list %&gt;% map( ~ to_CR(.x)) %&gt;% unlist(),
+    PR_time = flow_up_list %&gt;% map( ~ to_PR(.x)) %&gt;% unlist(),
+    flow_time = flow_up_list %&gt;% map( ~ fl_time(.x)) %&gt;% unlist(),
+    relapse_time = flow_up_list %&gt;% map( ~ too_relapse(.x)) %&gt;% unlist()
+  ) %&gt;% 
+  mutate(group = if_else(CR_time == 0 &amp; PR_time == 0, &quot;NR&quot;, &quot;PCR&quot;)) %&gt;% 
+  mutate(time = case_when(
+    group == &quot;PCR&quot; ~ choose_time(PR_time, CR_time),
+    group == &quot;NR&quot; ~ flow_time
+  )) %&gt;% 
+  mutate(status = if_else(group == &quot;NR&quot;, 1, 2)) %&gt;% 
+  mutate(surv_group=&quot;Complete or Partial remission&quot;) %&gt;% 
+  filter(id!=&quot;45&quot;)
+
+#CR 
+surv_CR &lt;-
+  data.frame(
+    id = names(flow_up_list),
+    CR_time = flow_up_list %&gt;% map( ~ to_CR(.x)) %&gt;% unlist(),
+    PR_time = flow_up_list %&gt;% map( ~ too_PR(.x)) %&gt;% unlist(),
+    flow_time = flow_up_list %&gt;% map( ~ fl_time(.x)) %&gt;% unlist(),
+    relapse_time = flow_up_list %&gt;% map( ~ too_relapse(.x)) %&gt;% unlist()
+  ) %&gt;% 
+  mutate(group = if_else(CR_time &gt; 0, &quot;CR&quot;, &quot;NR&quot;)) %&gt;%
+  mutate(time = case_when(
+    group == &quot;CR&quot; ~ CR_time,
+    group == &quot;NR&quot; ~ flow_time))%&gt;% 
+  mutate(status = if_else(group == &quot;CR&quot;, 2, 1)) %&gt;% 
+  mutate(surv_group=&quot;Complete remission&quot;) %&gt;% 
+  filter(id!=&quot;45&quot;)
+
+#PR 
+surv_PR &lt;-
+  data.frame(
+    id = names(flow_up_list),
+    CR_time = flow_up_list %&gt;% map( ~ to_CR(.x)) %&gt;% unlist(),
+    PR_time = flow_up_list %&gt;% map( ~ too_PR(.x)) %&gt;% unlist(),
+    flow_time = flow_up_list %&gt;% map( ~ fl_time(.x)) %&gt;% unlist(),
+    relapse_time = flow_up_list %&gt;% map( ~ too_relapse(.x)) %&gt;% unlist()
+  ) %&gt;% 
+  mutate(group = if_else(PR_time &gt; 0, &quot;PR&quot;, &quot;NR&quot;)) %&gt;%
+  mutate(time = case_when(
+    group == &quot;PR&quot; ~ PR_time,
+    group == &quot;NR&quot; ~ flow_time))%&gt;% 
+  mutate(status = if_else(group == &quot;PR&quot;, 2, 1)) %&gt;% 
+  mutate(surv_group=&quot;Partial remission&quot;) %&gt;% 
+  filter(id!=&quot;45&quot;)
+
+#relapse
+relapse &lt;- 
+data.frame(
+    id = names(flow_up_list),
+    CR_time = flow_up_list %&gt;% map( ~ to_CR(.x)) %&gt;% unlist(),
+    PR_time = flow_up_list %&gt;% map( ~ too_PR(.x)) %&gt;% unlist(),
+    flow_time = flow_up_list %&gt;% map( ~ fl_time(.x)) %&gt;% unlist(),
+    relapse_time = flow_up_list %&gt;% map( ~ too_relapse(.x)) %&gt;% unlist()
+  ) %&gt;% 
+  mutate(group = if_else(relapse_time &gt; 0, &quot;relapse&quot;, &quot;other&quot;)) %&gt;%
+  mutate(time = case_when(
+    group == &quot;relapse&quot; ~ relapse_time,
+    group == &quot;other&quot; ~ flow_time))%&gt;% 
+  mutate(status = if_else(group == &quot;relapse&quot;, 2, 1)) %&gt;% 
+  mutate(surv_group=&quot;Relapse&quot;) %&gt;% 
+  filter(id!=&quot;45&quot;)
+
+
+
+surv_tidy &lt;- 
+  surv_CPR %&gt;% 
+  bind_rows(surv_CR) %&gt;% 
+  bind_rows(surv_PR)
+#surv_tidy  &lt;- 
+#  inner_join(surv_tidy,clean_baseline) %&gt;% 
+#  dplyr::select(group, time, status, surv_group) 
+
+fit &lt;- survfit(Surv(time, status) ~ surv_group, data = surv_tidy) 
+print(fit)</code></pre>
+<pre><code>Call: survfit(formula = Surv(time, status) ~ surv_group, data = surv_tidy)
+
+                                           n events median 0.95LCL 0.95UCL
+surv_group=Complete or Partial remission 124    102      6       3       6
+surv_group=Complete remission            124     76     12      12      15
+surv_group=Partial remission             124     26     NA      NA      NA</code></pre>
+<pre class="r"><code>summary(fit)</code></pre>
+<pre><code>Call: survfit(formula = Surv(time, status) ~ surv_group, data = surv_tidy)
+
+                surv_group=Complete or Partial remission 
+ time n.risk n.event survival std.err lower 95% CI upper 95% CI
+    3    124      52   0.5806  0.0443      0.49998        0.674
+    6     61      29   0.3046  0.0438      0.22978        0.404
+    9     28      14   0.1523  0.0362      0.09562        0.243
+   12     10       5   0.0762  0.0301      0.03508        0.165
+   18      3       1   0.0508  0.0289      0.01666        0.155
+   24      2       1   0.0254  0.0230      0.00429        0.150
+
+                surv_group=Complete remission 
+ time n.risk n.event survival std.err lower 95% CI upper 95% CI
+    3    124       3    0.976  0.0138       0.9491        1.000
+    6    109      13    0.859  0.0326       0.7978        0.926
+    9     86      20    0.660  0.0465       0.5745        0.757
+   12     61      19    0.454  0.0505       0.3651        0.565
+   15     40      10    0.341  0.0490       0.2569        0.452
+   18     24       4    0.284  0.0484       0.2032        0.396
+   21     16       3    0.231  0.0481       0.1533        0.347
+   24     12       1    0.211  0.0478       0.1358        0.329
+   30      9       1    0.188  0.0479       0.1140        0.310
+   36      7       1    0.161  0.0480       0.0898        0.289
+   42      4       1    0.121  0.0501       0.0536        0.272
+
+                surv_group=Partial remission 
+ time n.risk n.event survival std.err lower 95% CI upper 95% CI
+    3    124      11    0.911  0.0255        0.863        0.963
+    6    102       5    0.867  0.0311        0.808        0.930
+    9     92       6    0.810  0.0367        0.741        0.885
+   12     79       2    0.790  0.0385        0.718        0.869
+   18     70       1    0.778  0.0396        0.704        0.860
+   24     66       1    0.767  0.0407        0.691        0.851</code></pre>
+</div>
+<div id="get-25-75-event-time" class="section level2">
+<h2><strong style="color: darkred;">Get 25% 75% event time</strong></h2>
+<pre class="r"><code>get_event_time &lt;- function(df){
+  fit &lt;- survfit(Surv(time, status) ~ surv_group, data = df)
+  time &lt;- prop_surv &lt;- summary(fit)  %&gt;% .$time
+  prop_surv &lt;- summary(fit)  %&gt;% .$surv 
+  prop_event &lt;- 1-prop_surv
+  cbind(time,prop_event,prop_surv)  %&gt;% 
+    as.data.frame()
+}
+
+print(&quot;surv_CPR&quot;)</code></pre>
+<pre><code>[1] &quot;surv_CPR&quot;</code></pre>
+<pre class="r"><code>#surv_CPR
+surv_CPR %&gt;%
+  get_event_time() %&gt;%
+  filter(prop_event &gt;= 0.25 &amp; prop_event &lt; 0.5) %&gt;% #25%
+  .[1,]</code></pre>
+<pre><code>  time prop_event prop_surv
+1    3  0.4193548 0.5806452</code></pre>
+<pre class="r"><code>surv_CPR %&gt;%
+  get_event_time() %&gt;%
+  filter(prop_event &gt;= .5 &amp; prop_event &lt; .75)  %&gt;% #50%
+  .[1,]</code></pre>
+<pre><code>  time prop_event prop_surv
+1    6  0.6953993 0.3046007</code></pre>
+<pre class="r"><code>surv_CPR %&gt;%
+  get_event_time() %&gt;%
+  filter(prop_event &gt;= .75)  %&gt;% #75%
+  .[1,]</code></pre>
+<pre><code>  time prop_event prop_surv
+1    9  0.8476996 0.1523004</code></pre>
+<pre class="r"><code>print(&quot;surv_CR&quot;)</code></pre>
+<pre><code>[1] &quot;surv_CR&quot;</code></pre>
+<pre class="r"><code>#surv_CR
+surv_CR %&gt;%
+  get_event_time() %&gt;%
+  filter(prop_event &gt;= 0.25 &amp; prop_event &lt; 0.5) %&gt;% #25%
+  .[1,]</code></pre>
+<pre><code>  time prop_event prop_surv
+1    9  0.3404406 0.6595594</code></pre>
+<pre class="r"><code>surv_CR %&gt;%
+  get_event_time() %&gt;%
+  filter(prop_event &gt;= .5 &amp; prop_event &lt; .75)  %&gt;% #50%
+  .[1,]</code></pre>
+<pre><code>  time prop_event prop_surv
+1   12  0.5458771 0.4541229</code></pre>
+<pre class="r"><code>surv_CR %&gt;%
+  get_event_time() %&gt;%
+  filter(prop_event &gt;= .75)  %&gt;% #75%
+  .[1,]</code></pre>
+<pre><code>  time prop_event prop_surv
+1   21  0.7693907 0.2306093</code></pre>
+<pre class="r"><code>print(&quot;surv_PR&quot;)</code></pre>
+<pre><code>[1] &quot;surv_PR&quot;</code></pre>
+<pre class="r"><code>#surv_PR
+surv_PR %&gt;%
+  get_event_time() %&gt;%
+  filter(prop_event &gt;= 0.25 &amp; prop_event &lt; 0.5) %&gt;% #25%
+  .[1,]</code></pre>
+<pre><code>   time prop_event prop_surv
+NA   NA         NA        NA</code></pre>
+<pre class="r"><code>surv_PR %&gt;%
+  get_event_time() %&gt;%
+  filter(prop_event &gt;= .5 &amp; prop_event &lt; .75)  %&gt;% #50%
+  .[1,]</code></pre>
+<pre><code>   time prop_event prop_surv
+NA   NA         NA        NA</code></pre>
+<pre class="r"><code>surv_PR %&gt;%
+  get_event_time() %&gt;%
+  filter(prop_event &gt;= .75)  %&gt;% #75%
+  .[1,]</code></pre>
+<pre><code>   time prop_event prop_surv
+NA   NA         NA        NA</code></pre>
+</div>
+<div id="create-plot" class="section level2">
+<h2><strong style="color: darkred;"> Create plot</strong></h2>
+<pre class="r"><code># Change color, linetype by strata, risk.table color by strata
+p_all &lt;- 
+ggsurvplot(
+  fit,
+  pval = TRUE,
+  conf.int = FALSE,
+  risk.table = &quot;abs_pct&quot;,
+  risk.table.col=&quot;surv_group&quot;,
+  risk.table.y.text.col=TRUE,
+  risk.table.y.text = FALSE,
+  #linetype = &quot;surv_group&quot;,
+  #ncensor.plot =TRUE,
+  surv.median.line = &quot;hv&quot;,
+  legend.labs = c(&quot;Complete or Partial remission&quot;, &quot;Complete remission&quot;,&quot;Partial remission&quot;),
+  ggtheme = theme_classic(),
+  palette = c(&quot;black&quot;, &quot;black&quot;,&quot;black&quot;),
+  xlab = &quot;Time in months&quot;,
+  ylab = &quot;Patients with event(%)&quot;,
+  break.time.by = 6,
+  fun = &quot;event&quot;
+)</code></pre>
+</div>
+<div id="plot-cpr" class="section level2">
+<h2>Plot CPR</h2>
+<pre class="r"><code>plot_CPR &lt;- 
+ggsurvplot(
+  survfit(Surv(time, status) ~ surv_group, data = surv_CPR),
+  pval = TRUE,
+  conf.int = FALSE,
+  risk.table = &quot;abs_pct&quot;,
+  #linetype = &quot;surv_group&quot;,
+  #ncensor.plot =TRUE,
+  surv.median.line = &quot;hv&quot;,
+  #legend.labs = c(&quot;Complete or Partial remission&quot;),
+  ggtheme = theme_classic(),
+  xlab = &quot;Time in months&quot;,
+  ylab = &quot;Patients with event(%)&quot;,
+  break.time.by = 6,
+  fun = &quot;event&quot;
+)</code></pre>
+</div>
+<div id="plot-cr" class="section level2">
+<h2>Plot CR</h2>
+<pre class="r"><code>plot_CR &lt;- 
+ggsurvplot(
+  survfit(Surv(time, status) ~ surv_group, data = surv_CR),
+  pval = TRUE,
+  conf.int = FALSE,
+  risk.table = &quot;abs_pct&quot;,
+  #linetype = &quot;surv_group&quot;,
+  #ncensor.plot =TRUE,
+  surv.median.line = &quot;hv&quot;,
+  #legend.labs = c(&quot;Complete remission&quot;),
+  ggtheme = theme_classic(),
+  xlab = &quot;Time in months&quot;,
+  ylab = &quot;Patients with event(%)&quot;,
+  break.time.by = 6,
+  fun = &quot;event&quot;
+)</code></pre>
+</div>
+<div id="plot-pr" class="section level2">
+<h2>Plot PR</h2>
+<pre class="r"><code>plot_PR &lt;- 
+ggsurvplot(
+  survfit(Surv(time, status) ~ surv_group, data = surv_PR),
+  pval = TRUE,
+  conf.int = FALSE,
+  risk.table = &quot;abs_pct&quot;,
+  #linetype = &quot;surv_group&quot;,
+  #ncensor.plot =TRUE,
+  surv.median.line = &quot;hv&quot;,
+  #legend.labs = c(&quot;Complete remission&quot;),
+  ggtheme = theme_classic(),
+  xlab = &quot;Time in months&quot;,
+  ylab = &quot;Patients with event(%)&quot;,
+  break.time.by = 6,
+  fun = &quot;event&quot;
+)</code></pre>
+</div>
+<div id="plot-relapse" class="section level2">
+<h2>Plot relapse</h2>
+<pre class="r"><code>plot_relapse &lt;- 
+ggsurvplot(
+  survfit(Surv(time, status) ~ surv_group, data = relapse),
+  pval = TRUE,
+  conf.int = FALSE,
+  risk.table = &quot;abs_pct&quot;,
+  #linetype = &quot;surv_group&quot;,
+  #ncensor.plot =TRUE,
+  surv.median.line = &quot;hv&quot;,
+  #legend.labs = c(&quot;Complete remission&quot;),
+  ggtheme = theme_classic(),
+  xlab = &quot;Time in months&quot;,
+  ylab = &quot;Patients with event(%)&quot;,
+  break.time.by = 6,
+  fun = &quot;event&quot;
+)</code></pre>
+</div>
+<div id="export-to-ppt" class="section level2">
+<h2><strong style="color: darkred;">EXPORT To PPT</strong></h2>
+<div id="single-pptx-file" class="section level3">
+<h3>Single pptx file👍</h3>
+<pre class="r"><code>library(&#39;ReporteRs&#39;)
+system(&quot;java -version&quot;)
+options( &quot;ReporteRs-fontsize&quot; = 12, 
+         &quot;ReporteRs-default-font&quot; = &quot;Times&quot;)
+#准备footnote and plot
+fig01_footnote_01 &lt;- 
+  pot(&quot;Figure 1. &quot;, textProperties(font.weight = &quot;bold&quot;)) + &quot;Kaplan–Meier curves for the percentages of participants with&quot;
+#new pptx
+doc &lt;- pptx()
+slide.layouts(doc)
+doc &lt;- addSlide(doc, &quot;Two Content&quot;)
+doc &lt;- addPlot(doc,function()
+          print(p_all, newpage = FALSE), # Print the survival curves in the powerpoint
+          vector.graphic = TRUE)   # Make it editable
+#plot_CPR
+doc &lt;- addSlide(doc, &quot;Two Content&quot;)
+doc &lt;- addPlot(doc,function()
+          print(plot_CPR, newpage = FALSE), # Print the survival curves in the powerpoint
+          vector.graphic = TRUE) 
+
+doc &lt;- addSlide(doc, &quot;Two Content&quot;)
+doc &lt;- addPlot(doc,function()
+          print(plot_CR, newpage = FALSE), # Print the survival curves in the powerpoint
+          vector.graphic = TRUE) 
+
+doc &lt;- addSlide(doc, &quot;Two Content&quot;)
+doc &lt;- addPlot(doc,function()
+          print(plot_PR, newpage = FALSE), # Print the survival curves in the powerpoint
+          vector.graphic = TRUE) 
+
+doc &lt;- addSlide(doc, &quot;Two Content&quot;)
+doc &lt;- addPlot(doc,function()
+          print(plot_relapse, newpage = FALSE), # Print the survival curves in the powerpoint
+          vector.graphic = TRUE) 
+
+writeDoc(doc, file = here(&quot;output/figures/editable-survival-curves.pptx&quot;))</code></pre>
+</div>
+</div>
+<div id="session-information" class="section level2">
+<h2>Session information</h2>
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 3.4.4 Patched (2018-03-19 r74624)
+Platform: x86_64-apple-darwin15.6.0 (64-bit)
+Running under: macOS Sierra 10.12.6
+
+Matrix products: default
+BLAS: /Library/Frameworks/R.framework/Versions/3.4/Resources/lib/libRblas.0.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/3.4/Resources/lib/libRlapack.dylib
+
+locale:
+[1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] bindrcpp_0.2.2     here_0.1           Cairo_1.5-9       
+ [4] survminer_0.4.2    survival_2.42-3    ggpubr_0.1.6      
+ [7] magrittr_1.5       flextable_0.4.4    forcats_0.3.0     
+[10] stringr_1.3.0      dplyr_0.7.4        purrr_0.2.4       
+[13] readr_1.1.1        tidyr_0.8.0        tibble_1.4.2      
+[16] ggplot2_2.2.1.9000 tidyverse_1.2.1   
+
+loaded via a namespace (and not attached):
+ [1] httr_1.3.1          jsonlite_1.5        splines_3.4.4      
+ [4] R.utils_2.6.0       modelr_0.1.1        assertthat_0.2.0   
+ [7] cellranger_1.1.0    yaml_2.1.18         gdtools_0.1.7      
+[10] pillar_1.2.2        backports_1.1.2     lattice_0.20-35    
+[13] glue_1.2.0          uuid_0.1-2          digest_0.6.15      
+[16] rvest_0.3.2         colorspace_1.3-2    cmprsk_2.2-7       
+[19] htmltools_0.3.6     Matrix_1.2-14       R.oo_1.22.0        
+[22] plyr_1.8.4          psych_1.8.4         pkgconfig_2.0.1    
+[25] broom_0.4.4         haven_1.1.1         xtable_1.8-2       
+[28] scales_0.5.0.9000   km.ci_0.5-2         whisker_0.3-2      
+[31] officer_0.2.2       KMsurv_0.1-5        git2r_0.21.0       
+[34] withr_2.1.2         lazyeval_0.2.1      cli_1.0.0          
+[37] mnormt_1.5-5        crayon_1.3.4        readxl_1.1.0       
+[40] evaluate_0.10.1     R.methodsS3_1.7.1   nlme_3.1-137       
+[43] xml2_1.2.0          foreign_0.8-69      tools_3.4.4        
+[46] data.table_1.10.4-3 hms_0.4.2           munsell_0.4.3      
+[49] zip_1.0.0           compiler_3.4.4      rlang_0.2.0.9001   
+[52] grid_3.4.4          labeling_0.3        base64enc_0.1-3    
+[55] rmarkdown_1.9       gtable_0.2.0        reshape2_1.4.3     
+[58] R6_2.2.2            gridExtra_2.3       zoo_1.8-1          
+[61] lubridate_1.7.4     knitr_1.20          survMisc_0.5.4     
+[64] bindr_0.1.1         workflowr_1.0.1     rprojroot_1.3-2    
+[67] stringi_1.2.2       parallel_3.4.4      Rcpp_0.12.16       </code></pre>
+</div>
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+http://docs.mathjax.org/en/latest/configuration.html.  This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+<hr>
+<p>
+  This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a>
+  analysis was created with
+  <a href="https://github.com/jdblischak/workflowr">workflowr</a> 1.0.1
+</p>
+<hr>
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

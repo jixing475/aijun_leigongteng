@@ -1,0 +1,671 @@
+---
+title: "_07_multiple_regression"
+author: "zero"
+date: "4/23/2018"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,#show code and output
+	message = FALSE,
+	warning = FALSE,
+	engine.path="/Users/zero/anaconda3/bin/python"
+)
+```
+## library packages
+```{r}
+library(tidyverse)
+source("~/Documents/_14_tmp/🏃leigongteng/02_scripts/some_function.R")
+```
+
+## Load data:
+
+```{r load-data}
+load("../01_data/TableOne_data_with_id.Rdata")
+library(readxl)
+library(here)
+library(janitor)
+bingli <- read_excel(here("01_data/bingli-with-two-missing.xlsx"), 
+                      col_types = c("text", "text", "text", 
+                                    "numeric", "numeric", "numeric", 
+                                    "text", "text", "text", "text", "text", 
+                                    "text", "numeric", "text", "text", 
+                                    "text", "text", "text", "numeric", 
+                                    "text", "text", "numeric", "numeric", 
+                                    "numeric", "numeric", "text", "numeric", 
+                                    "numeric", "text", "numeric", "numeric", 
+                                    "text", "text")) %>% janitor::clean_names()
+
+colnames(bingli) <- Hmisc::Cs(name, id, sex, age, height, weight, smoke, drink, hypertension, diabetes,
+                      Hepatitis_B, other_disease, NS_bingcheng, jiwang_hormone, jiwang_CTX, jiwang_CNI,
+                      jiwang_xiaoxi, airuohua, ACEI_ARB, statins, enough_hormone, hormore_liaocheng, flowup_time,
+                      SBP, DBP, MN_stage, n_glom, glom_yinghua_n, jieduan_yinghua_n, xinyueti, qiunang_nianlian_n,
+                      name_1, x_1)
+rm_col <- Hmisc::Cs(name, sex, age, height, weight, smoke, drink, hypertension, diabetes,
+                      Hepatitis_B, other_disease, NS_bingcheng, jiwang_hormone, jiwang_CTX, jiwang_CNI,
+                      jiwang_xiaoxi, airuohua, ACEI_ARB,name_1, x_1)
+bingli <- 
+  bingli %>%
+  dplyr::select(-one_of(rm_col)) %>%
+  filter(!id %in% c("56", "81")) %>%
+  inner_join(TableOne_data_with_id,  by = "id")
+
+bingli <-
+  bingli %>%
+  mutate(qiunang_nianlian_n = if_else(qiunang_nianlian_n == 0, "0", "1")) %>%
+  mutate(xinyueti = if_else(xinyueti == 0, "0", "1")) %>%
+  mutate(jieduan_yinghua_n = if_else(jieduan_yinghua_n == 0, "0", "1")) %>%
+  mutate(glom_yinghua_n = if_else(glom_yinghua_n == 0, "0", "1")) %>%
+  mutate(MN_stage = if_else(MN_stage=="1","low", "high"))
+  
+```
+
+## skimr
+```{r}
+Tmisc::gg_na(bingli)
+dat <- 
+  bingli %>% 
+  dplyr::select(-id,-other_disease) %>% 
+  dplyr::select(group, everything())
+
+library(skimr)
+skimr::skim(dat)
+summarytools::dfSummary(dat)
+library(dplyr)
+group_by(dat, group) %>% skimr::skim()
+#dat <- dat[complete.cases(dat),]
+```
+
+##Table one 122
+```{r}
+#重排因子顺序
+data <- dat
+data <- mutate_if(data, is.character, as.factor)
+data$group <- factor(data$group, levels = c("CR","PR","NR"))
+fac <- data$group
+
+#是否为正态分布
+vec_t_w <- 
+  data %>% 
+  get_num() %>% 
+  t_or_w()
+
+#total summary  numeric variable
+data %>%
+    get_num() %>%
+    sapply(get_stat_num) -> all
+
+#summary for group_1 "CR"
+data %>%
+  filter(group == levels(fac)[1]) %>%
+  get_num() %>%
+  sapply(get_stat_mean) -> a_mean
+data %>%
+  filter(group == levels(fac)[1]) %>%
+  get_num() %>%
+  sapply(get_stat_median) -> a_median
+
+#summary for group_2 "PR"
+data %>%
+  filter(group == levels(fac)[2]) %>%
+  get_num() %>%
+  sapply(get_stat_mean) -> b_mean
+data %>%
+  filter(group == levels(fac)[2]) %>%
+  get_num() %>%
+  sapply(get_stat_median) -> b_median
+
+#summary for group_3 "NR"
+data %>%
+  filter(group == levels(fac)[3]) %>%
+  get_num() %>%
+  sapply(get_stat_mean) -> c_mean
+data %>%
+  filter(group == levels(fac)[3]) %>%
+  get_num() %>%
+  sapply(get_stat_median) -> c_median
+
+#===== get p value==== 
+#CR vs PR
+data %>%
+  filter(group != "NR") %>% 
+  get_num() %>%
+  sapply(get_p, fac = fac[fac != "NR"]) -> p_CR_vs_PR
+#CR vs NR
+data %>%
+  filter(group != "PR") %>% 
+  get_num() %>%
+  sapply(get_p, fac = fac[fac != "PR"]) -> p_CR_vs_NR
+#PR vs NR
+data %>%
+  filter(group != "CR") %>% 
+  get_num() %>%
+  sapply(get_p, fac = fac[fac != "CR"]) -> p_PR_vs_NR
+
+CR <- if_else(vec_t_w, a_mean, a_median)
+PR <- if_else(vec_t_w, b_mean, b_median)
+NR <- if_else(vec_t_w, c_mean, c_median)
+result_num <- cbind(all,CR, PR, NR, p_CR_vs_PR,p_CR_vs_NR, p_PR_vs_NR)
+
+#==== fac stat====
+#CR vs PR
+CR_vs_PR_p <- 
+data %>%
+  filter(group != "NR") %>% 
+  get_fac() %>%
+  select(-group) %>%
+  lapply(., get_stat_fac, fac = factor(fac[fac != "NR"],levels = c("CR","PR")))  %>%
+  do.call(rbind, .)  %>% 
+  .[["p_value"]] %>% 
+  .[!is.na(.)]
+
+#CR vs NR
+CR_vs_NR_p <- 
+data %>%
+  filter(group != "PR") %>% 
+  get_fac() %>%
+  select(-group) %>%
+  lapply(., get_stat_fac, fac = factor(fac[fac != "PR"],levels = c("CR","NR")))  %>%
+  do.call(rbind, .)  %>% 
+  .[["p_value"]] %>% 
+  .[!is.na(.)]
+
+#PR vs NR
+PR_vs_NR_p <- 
+data %>%
+  filter(group != "CR") %>% 
+  get_fac() %>%
+  select(-group) %>%
+  lapply(., get_stat_fac, fac = factor(fac[fac != "CR"],levels = c("PR","NR")))  %>%
+  do.call(rbind, .)  %>% 
+  .[["p_value"]] %>% 
+  .[!is.na(.)]
+
+
+fac_stat <-
+  data %>%
+  get_fac() %>%
+  select(-group) %>%
+  lapply(., get_stat_fac, fac = fac)  %>%
+  do.call(rbind, .) 
+
+fac_stat$p_value <- rep(fac_stat$p_value[!is.na(fac_stat$p_value)],
+    each=2) 
+fac_stat <-
+  fac_stat %>%
+  mutate(row_name= rownames(.)) %>% 
+  filter(x == "1" | x=="female"| x=="high") %>%
+  dplyr::select(-x) 
+
+fac_stat <-
+  cbind(fac_stat, CR_vs_PR_p, CR_vs_NR_p, PR_vs_NR_p) %>%
+  dplyr::select(row_name, Total, CR, PR, NR, CR_vs_PR_p, CR_vs_NR_p, PR_vs_NR_p)
+
+num_stat <-
+  result_num %>%
+  as.data.frame() %>%
+  mutate(row_name = rownames(.)) %>%
+  select(row_name, everything())
+colnames(num_stat) <- colnames(fac_stat)
+
+#合并表格
+result_table  <- 
+  rbind(fac_stat, num_stat)
+# a = CR vs PR
+# b = CR vs NR
+# c = PR vs NR
+
+result_table <-
+  result_table %>%
+  mutate(
+  CR_star = case_when(
+  CR_vs_PR_p <= 0.05 & CR_vs_NR_p<=0.05 ~ str_c(CR, "a,b"),
+  CR_vs_PR_p <= 0.05 & CR_vs_NR_p> 0.05 ~ str_c(CR, "a"),
+  CR_vs_PR_p  > 0.05 & CR_vs_NR_p<=0.05 ~ str_c(CR, "b"),
+  CR_vs_PR_p  > 0.05 & CR_vs_NR_p > 0.05 ~ CR
+  )
+  ) %>%
+  mutate(PR_star = if_else(PR_vs_NR_p <= 0.05, str_c(PR, "b"), PR)) %>%
+  dplyr::select(row_name, Total, CR_star, PR_star, NR)
+  
+
+```
+
+### colname and rownames
+```{r}
+#修改列名 和 行名
+colnames(result_table) <- c(
+  "Characteristic",
+  str_c("Overall (n=", length(fac), ")"),
+  str_c("Complete Remission (n=", sum(fac == "CR"), ")"),
+  str_c("Partial Remission (n=", sum(fac == "PR"), ")"),
+  str_c("No Remission (n=", sum(fac == "NR"), ")")
+  )
+#rowname 🔥 🔥 🔥   
+rownames(result_table) <- c("statins, n(%)", "enough, hormone, n(%)", "MN, stage, n(%)", "Glomerulosclerosis, n(%)", "Segmental, sclerosis, n(%)", "crescent, n(%)", "balloon, adhesion, n(%)", "Female, n(%)", "History, of, smoke, n(%)", "History, of, drink, n(%)", "Hypertension, n(%)", "Diabetes, n(%)", "Hepatitis, B, n(%)", "History, of, hormone, n(%)", "History, of, CTX, n(%)", "History, of, CNI, n(%)", "History, of, MMC, n(%)", "History, of, Leflunomide, n(%)", "ACEI/ARB, n(%)", "Hormone, therapy, (m)", "flow, up, time, (m)", "SBP, (mmHg)", "DBP, (mmHg)", "N, of, Glomerulus", "Age, (yr)", "Height, (cm)", "Body, weight, (kg)", "NS, course, (m)", "Serum, creatinine, (mg/dl)", "CystatinC, (mg/L)", "UA, (umol/L)", "Cholesterol, (mg/dl)", "Serum, albumin, (g/dl)", "Glucosuria, (mmol/24h)", "proteinuria, (g/24h)", "eGFR, (ml/min, per, 1.73, m²)")
+```
+
+```{r}
+result_table$Characteristic <- rownames(result_table)
+```
+
+
+#### word dataframe Tableone 122  to word
+```{r}
+library(ReporteRs)
+library(magrittr)
+
+#set option
+options( "ReporteRs-fontsize" = 12, 
+         "ReporteRs-default-font" = "Times")
+
+#=====准备文本和表格=====
+
+T1_title <-
+  pot("Table 1. ", textProperties(color = "black", font.weight = "bold")) +
+  "Baseline characteristics of patients in the study group as a whole (overall) and in patients with complete, partial, or no remission or who received hormone and Tripterygium as therapy."
+  
+T1_footnote_01 <-
+  "Variables expressed as mean ± SD are compared using one-way ANOVA. Variables expressed as median (IQR) are compared using the Kruskal–Wallis test. Categorical variables are expressed in percentages and compared using the chi-squared test."
+
+T1_footnote_02 <-
+  pot("a", textProperties(vertical.align = "superscript")) +
+  pot("p", textProperties(font.style = "italic")) +
+  "<0.05 versus partial remission."
+
+T1_footnote_03 <-
+  pot("b", textProperties(vertical.align = "superscript")) +
+  pot("p", textProperties(font.style = "italic")) +
+  "<0.05 versus no remission."
+  
+TableOne <- result_table # 🏃ass a dataframe 
+MyFTable <- 
+TableOne%>%
+    # 设置字体
+    FlexTable(header.cell.props = cellProperties( background.color = "#DDDDDD"),
+              header.text.props = textBold(color = "black"),
+              add.rownames = FALSE ) %>%
+    #设置边界
+    setFlexTableBorders(inner.vertical = borderNone(),
+                        inner.horizontal = borderNone(),
+                        outer.vertical = borderNone(),
+                        outer.horizontal = borderProperties( color = "black",style = "solid", width = 2 )) %>% 
+    #斑马线
+    setZebraStyle(odd = "#FFFFFF", even = "#FFFFFF")
+
+#写入 word
+doc <- docx()
+doc <- addParagraph(doc, T1_title)
+doc <- addFlexTable(doc, MyFTable)
+doc <- addParagraph(doc,T1_footnote_01)
+doc <- addParagraph(doc,T1_footnote_02)
+doc <- addParagraph(doc,T1_footnote_03)
+writeDoc(doc, file = "../03_analysis/table/TableOne_122.docx")
+```
+
+## dat rename dat colnames
+```{r}
+colnames(dat) <- 
+  c("group",
+  "Statins, n(%)",
+  "Enough Hormone, n(%)",
+  "Hormone therapy (m)",
+  "Flow up time (m)",
+  "SBP (mmHg)",
+  "DBP (mmHg)",
+  "MN stage, n(%)",
+  "N of Glomerulus",
+  "Glomerulosclerosis, n(%)",
+  "Segmental sclerosis, n(%)",
+  "Crescent, n(%)",
+  "Balloon adhesion, n(%)",
+  "Female, n(%)",
+  "Age (yr)",
+  "Height (cm)",
+  "Body weight (kg)",
+  "History of smoke, n(%)",
+  "History of drink n(%)",
+  "Hypertension n(%)",
+  "Diabetes n(%)",
+  "Hepatitis B, n(%)",
+  "NS course (m)",
+  "History of hormone, n(%)",
+  "History of CTX, n(%)",
+  "History of CNI, n(%)",
+  "History of MMC, n(%)",
+  "History of Leflunomide, n(%)",
+  "ACEI/ARB, n(%)",  
+  "Serum creatinine (mg/dl)",
+  "CystatinC (mg/L)",
+  "UA (umol/L)",
+  "Cholesterol (mg/dl)",
+  "Serum albumin (g/dl)",
+  "Glucosuria (mmol/24h)",
+  "proteinuria (g/24h)", 
+  "eGFR (ml/min per 1.73 m²)")
+```
+
+
+
+### simple line model CPR vs NR
+```{r}
+reg_data <- dat %>%
+  mutate(group = if_else(group == "NR", "NR", "CPR"))
+reg_data <- mutate_if(reg_data, is.character, as.factor)
+reg_data$group <- factor(reg_data$group, levels = c("NR","CPR"))
+
+# data first column must be Y
+
+y <- reg_data[[1]]
+res <- lapply(reg_data[,-1], function(x){
+  fit <- glm(y~x, family = binomial())
+  β <- round(coef(fit), 2)
+  CI <- round(confint(fit), 2)
+  P <- round(coef(summary(fit))[,4], 3)
+  # Names the columns of CI
+  colnames(CI) <- c("Lower", "Higher")
+  # Bind columns together as dataset
+  table2 <- as.data.frame(cbind(β, CI, P))
+  # add brackes and line for later use in table
+  table2$b <- "~"
+  # order the columns
+  table2 <- table2[,c("β","Lower","b","Higher", "P")]
+  # Merge all columns in one
+  library(tidyr)
+  table2 = unite(table2, "95%CI", c( Lower, b, Higher), sep = "", remove=T)
+  table2 <- table2[-1,]
+  return(table2)
+})
+res <- do.call(rbind,res)
+res %>% mutate(name=rownames(res)) %>% filter(P <=0.05)
+```
+
+#### word
+```{r}
+library(ReporteRs)
+library(magrittr)
+
+#set option
+options( "ReporteRs-fontsize" = 12, 
+         "ReporteRs-default-font" = "Times")
+
+#=====准备文本和表格=====
+TableOne <-  # 🏃as a dataframe 
+  res %>%
+  mutate(Variable = rownames(res)) %>%
+  dplyr::select(Variable, everything())
+
+T1_title <-
+  pot("Table 4. ", textProperties(color = "black", font.weight = "bold")) +
+  "Simple line model analysis in patients with remission vs no remission or who received hormone and Tripterygium as therapy."
+  
+
+MyFTable <- 
+TableOne%>%
+    # 设置字体
+    FlexTable(header.cell.props = cellProperties( background.color = "#DDDDDD"),
+              header.text.props = textBold(color = "black"),
+              add.rownames = FALSE ) %>%
+    #设置边界
+    setFlexTableBorders(inner.vertical = borderNone(),
+                        inner.horizontal = borderNone(),
+                        outer.vertical = borderNone(),
+                        outer.horizontal = borderProperties( color = "black",style = "solid", width = 2 )) %>% 
+    #斑马线
+    setZebraStyle(odd = "#FFFFFF", even = "#FFFFFF")
+
+#写入 word
+doc <- docx()
+doc <- addParagraph(doc, T1_title)
+doc <- addFlexTable(doc, MyFTable)
+
+writeDoc(doc, file = "../03_analysis/table/glm-CPR-vs-NR.docx")
+```
+
+
+###simple model CR vs NR
+```{r}
+CR_NR_data <- dat %>% filter(group!="PR")
+CR_NR_data <- mutate_if(CR_NR_data, is.character, as.factor)
+CR_NR_data$group <- factor(CR_NR_data$group, levels = c("NR","CR"))
+
+# data first column must be Y
+
+y <- CR_NR_data[[1]]
+res <- lapply(CR_NR_data[,-1], function(x){
+  fit <- glm(y~x, family = binomial())
+  β <- round(coef(fit), 2)
+  CI <- round(confint(fit), 2)
+  P <- round(coef(summary(fit))[,4], 3)
+  # Names the columns of CI
+  colnames(CI) <- c("Lower", "Higher")
+  # Bind columns together as dataset
+  table2 <- as.data.frame(cbind(β, CI, P))
+  # add brackes and line for later use in table
+  table2$b <- "~"
+  # order the columns
+  table2 <- table2[,c("β","Lower","b","Higher", "P")]
+  # Merge all columns in one
+  library(tidyr)
+  table2 = unite(table2, "95%CI", c( Lower, b, Higher), sep = "", remove=T)
+  table2 <- table2[-1,]
+  return(table2)
+})
+res <- do.call(rbind,res)
+res %>% mutate(name=rownames(res)) %>% filter(P <=0.05)
+```
+
+#### word
+```{r}
+library(ReporteRs)
+library(magrittr)
+
+#set option
+options( "ReporteRs-fontsize" = 12, 
+         "ReporteRs-default-font" = "Times")
+
+#=====准备文本和表格=====
+TableOne <-  # 🏃as a dataframe 
+  res %>%
+  mutate(Variable = rownames(res)) %>%
+  dplyr::select(Variable, everything())
+
+T1_title <-
+  pot("Table 5. ", textProperties(color = "black", font.weight = "bold")) +
+  "Simple line model analysis in patients with complete remission vs no remission or who received hormone and Tripterygium as therapy."
+  
+
+MyFTable <- 
+TableOne%>%
+    # 设置字体
+    FlexTable(header.cell.props = cellProperties( background.color = "#DDDDDD"),
+              header.text.props = textBold(color = "black"),
+              add.rownames = FALSE ) %>%
+    #设置边界
+    setFlexTableBorders(inner.vertical = borderNone(),
+                        inner.horizontal = borderNone(),
+                        outer.vertical = borderNone(),
+                        outer.horizontal = borderProperties( color = "black",style = "solid", width = 2 )) %>% 
+    #斑马线
+    setZebraStyle(odd = "#FFFFFF", even = "#FFFFFF")
+
+#写入 word
+doc <- docx()
+doc <- addParagraph(doc, T1_title)
+doc <- addFlexTable(doc, MyFTable)
+
+writeDoc(doc, file = "../03_analysis/table/glm-CR-vs-NR.docx")
+```
+
+###simple model PR vs NR
+```{r}
+PR_NR_data <- dat %>% filter(group!="CR")
+PR_NR_data <- mutate_if(PR_NR_data, is.character, as.factor)
+PR_NR_data$group <- factor(PR_NR_data$group, levels = c("NR","PR"))
+
+# data first column must be Y
+
+y <- PR_NR_data[[1]]
+res <- lapply(PR_NR_data[,-1], function(x){
+  fit <- glm(y~x, family = binomial())
+  β <- round(coef(fit), 2)
+  CI <- round(confint(fit), 2)
+  P <- round(coef(summary(fit))[,4], 3)
+  # Names the columns of CI
+  colnames(CI) <- c("Lower", "Higher")
+  # Bind columns together as dataset
+  table2 <- as.data.frame(cbind(β, CI, P))
+  # add brackes and line for later use in table
+  table2$b <- "~"
+  # order the columns
+  table2 <- table2[,c("β","Lower","b","Higher", "P")]
+  # Merge all columns in one
+  library(tidyr)
+  table2 = unite(table2, "95%CI", c( Lower, b, Higher), sep = "", remove=T)
+  table2 <- table2[-1,]
+  return(table2)
+})
+res <- do.call(rbind,res)
+res %>% mutate(name=rownames(res)) %>% filter(P <=0.05)
+```
+
+#### word
+```{r}
+library(ReporteRs)
+library(magrittr)
+
+#set option
+options( "ReporteRs-fontsize" = 12, 
+         "ReporteRs-default-font" = "Times")
+
+#=====准备文本和表格=====
+TableOne <-  # 🏃as a dataframe 
+  res %>%
+  mutate(Variable = rownames(res)) %>%
+  dplyr::select(Variable, everything())
+
+T1_title <-
+  pot("Table 6. ", textProperties(color = "black", font.weight = "bold")) +
+  "Simple line model analysis in patients with partial remission vs no remission or who received hormone and Tripterygium as therapy."
+  
+
+MyFTable <- 
+TableOne%>%
+    # 设置字体
+    FlexTable(header.cell.props = cellProperties( background.color = "#DDDDDD"),
+              header.text.props = textBold(color = "black"),
+              add.rownames = FALSE ) %>%
+    #设置边界
+    setFlexTableBorders(inner.vertical = borderNone(),
+                        inner.horizontal = borderNone(),
+                        outer.vertical = borderNone(),
+                        outer.horizontal = borderProperties( color = "black",style = "solid", width = 2 )) %>% 
+    #斑马线
+    setZebraStyle(odd = "#FFFFFF", even = "#FFFFFF")
+
+#写入 word
+doc <- docx()
+doc <- addParagraph(doc, T1_title)
+doc <- addFlexTable(doc, MyFTable)
+
+writeDoc(doc, file = "../03_analysis/table/glm-PR-vs-NR.docx")
+```
+
+###simple model CR vs PR
+```{r}
+CR_PR_data <- dat %>% filter(group!="NR")
+CR_PR_data <- mutate_if(CR_PR_data, is.character, as.factor)
+CR_PR_data$group <- factor(CR_PR_data$group, levels = c("PR","CR"))
+
+# data first column must be Y
+
+y <- CR_PR_data[[1]]
+res <- lapply(CR_PR_data[,-1], function(x){
+  fit <- glm(y~x, family = binomial())
+  β <- round(coef(fit), 2)
+  CI <- round(confint(fit), 2)
+  P <- round(coef(summary(fit))[,4], 3)
+  # Names the columns of CI
+  colnames(CI) <- c("Lower", "Higher")
+  # Bind columns together as dataset
+  table2 <- as.data.frame(cbind(β, CI, P))
+  # add brackes and line for later use in table
+  table2$b <- "~"
+  # order the columns
+  table2 <- table2[,c("β","Lower","b","Higher", "P")]
+  # Merge all columns in one
+  library(tidyr)
+  table2 = unite(table2, "95%CI", c( Lower, b, Higher), sep = "", remove=T)
+  table2 <- table2[-1,]
+  return(table2)
+})
+res <- do.call(rbind,res)
+res %>% mutate(name=rownames(res)) %>% filter(P <=0.05)
+```
+
+#### word
+```{r}
+library(ReporteRs)
+library(magrittr)
+
+#set option
+options( "ReporteRs-fontsize" = 12, 
+         "ReporteRs-default-font" = "Times")
+
+#=====准备文本和表格=====
+TableOne <-  # 🏃as a dataframe 
+  res %>%
+  mutate(Variable = rownames(res)) %>%
+  dplyr::select(Variable, everything())
+
+T1_title <-
+  pot("Table 7. ", textProperties(color = "black", font.weight = "bold")) +
+  "Simple line model analysis in patients with complete remission vs partial remission or who received hormone and Tripterygium as therapy."
+  
+
+MyFTable <- 
+TableOne%>%
+    # 设置字体
+    FlexTable(header.cell.props = cellProperties( background.color = "#DDDDDD"),
+              header.text.props = textBold(color = "black"),
+              add.rownames = FALSE ) %>%
+    #设置边界
+    setFlexTableBorders(inner.vertical = borderNone(),
+                        inner.horizontal = borderNone(),
+                        outer.vertical = borderNone(),
+                        outer.horizontal = borderProperties( color = "black",style = "solid", width = 2 )) %>% 
+    #斑马线
+    setZebraStyle(odd = "#FFFFFF", even = "#FFFFFF")
+
+#写入 word
+doc <- docx()
+doc <- addParagraph(doc, T1_title)
+doc <- addFlexTable(doc, MyFTable)
+
+writeDoc(doc, file = "../03_analysis/table/glm-CR-vs-PR.docx")
+```
+
+### multiple regression
+
+```{r}
+attach(reg_data)
+fit <- glm(group ~ `Female, n(%)` + `Statins, n(%)` + 
+             `Enough Hormone, n(%)` + `MN stage, n(%)` + `Hormone therapy (m)`+
+             `SBP (mmHg)` + `DBP (mmHg)` + `N of Glomerulus` +
+             `Glomerulosclerosis, n(%)`+`Segmental sclerosis, n(%)`+`Crescent, n(%)`+`Balloon adhesion, n(%)`+
+             `eGFR (ml/min per 1.73 m²)`, data=reg_data,
+    family = binomial())
+summary(fit)
+colnames(reg_data)
+
+fit <- glm(group ~`Statins, n(%)` + `Hormone therapy (m)`+ `Flow up time (m)`+ `N of Glomerulus` + `proteinuria (g/24h)`+`Enough Hormone, n(%)` + `Cholesterol (mg/dl)`+ `DBP (mmHg)` +`History of hormone, n(%)`+ `History of CNI, n(%)` +`CystatinC (mg/L)`+`Serum albumin (g/dl)`+ `Glomerulosclerosis, n(%)`+`Segmental sclerosis, n(%)`+`Crescent, n(%)`+`Balloon adhesion, n(%)`+`eGFR (ml/min per 1.73 m²)`, data=reg_data,
+    family = binomial())
+summary(fit)
+
+fit <- glm(group ~`proteinuria (g/24h)`+`Statins, n(%)` + `Hormone therapy (m)`+ `N of Glomerulus` +`Enough Hormone, n(%)` + `History of hormone, n(%)`+ `Glomerulosclerosis, n(%)`+`Segmental sclerosis, n(%)`+`Crescent, n(%)`+`Balloon adhesion, n(%)`, data=reg_data,
+    family = binomial(link = "logit"))
+summary(fit)
+
+detach(reg_data)
+```
+

@@ -1,0 +1,168 @@
+---
+title: "figures"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+[Correlation Analyses in R](http://www.sthda.com/english/wiki/print.php?id=112)
+
+_Correlation matrix analysis is very useful to study dependences or associations between variables_
+
+## import library
+```{r include=FALSE}
+library(tidyverse)
+library(flextable)
+library(ggpubr)
+library('ReporteRs')
+library(Cairo)
+source("../02_scripts/some_function.R")
+```
+
+##load data
+```{r}
+load("../01_data/clean_data.RData")
+```
+
+```{r}
+bind_unit <- 
+  data.frame(stringsAsFactors=FALSE,
+     treat_month = c(27L, 33L, 39L, 45L, 51L, 57L),
+          median = c(NA, NA, NA, NA, NA, NA),
+               n = c(NA, NA, NA, NA, NA, NA),
+           group = c("12 months", "12 months", "12 months", "12 months", "12 months",
+                     "12 months")
+  )
+
+```
+
+
+# clean data
+```{r}
+flow_up <-
+  data.frame(
+  stringsAsFactors = FALSE,
+  rep_id = rep(clean_baseline$id, each = 15),
+  sex = rep(clean_baseline$sex, each = 15),
+  age = rep(clean_baseline$age, each = 15),
+  height = rep(clean_baseline$height, each = 15),
+  weight = rep(clean_baseline$weight, each = 15),
+  treat_month = rep(c(
+  0, 3, 6, 9, 12, 15, 18, 21, 24, 30, 36, 42, 48, 54, 60
+  ), 124)
+  ) %>%
+  full_join(flow_up, by = c("rep_id", "treat_month"))  %>% 
+  filter(!is.na(SCreatinine)) %>% 
+  filter(rep_id!="45")
+
+flow_up$eGFR   <-
+  clinPK::calc_egfr(
+  method = "cockcroft_gault",
+  sex = flow_up$sex,
+  age = flow_up$age,
+  scr = flow_up$SCreatinine,
+  scr_unit = "micromol/L",
+  height = flow_up$height,
+  weight = flow_up$weight
+  ) %>%
+  .$value
+```
+
+
+
+# eGFR
+```{r}
+#overall
+median_overall <- 
+  flow_up %>% 
+  filter(flow_up$rep_id!="45") %>% #45 号病人的随访情况太少
+  filter(!is.na(eGFR)) %>% 
+  group_by(treat_month) %>% 
+  summarise(median= median(eGFR, na.rm = TRUE),
+            n=length(eGFR),
+            group="Overall") 
+
+#====12 month====
+median_12 <- 
+  flow_up %>%
+  filter(flow_up$rep_id != "45") %>%
+  filter(rep_id %in% get_idx(m = "12")) %>%
+  filter(treat_month <= 12) %>% 
+  filter(!is.na(eGFR)) %>%
+  group_by(treat_month) %>%
+  summarise(median = median(eGFR, na.rm = TRUE),
+            n=length(eGFR),
+            group="12 months") %>% 
+  rbind(bind_unit)
+
+#====36 month====
+median_36 <- 
+  flow_up %>%
+  filter(flow_up$rep_id != "45") %>%
+  filter(rep_id %in% get_idx(m = "36")) %>%
+  filter(treat_month <= 36) %>% 
+  filter(!is.na(eGFR)) %>%
+  group_by(treat_month) %>%
+  summarise(median = median(eGFR, na.rm = TRUE),
+            n=length(eGFR),
+            group="36 months")
+
+#====60 month 10 people====
+median_60 <- 
+  flow_up %>%
+  filter(flow_up$rep_id != "45") %>%
+  filter(rep_id %in% get_idx(m = "60")) %>%
+  filter(treat_month <= 60) %>% 
+  filter(!is.na(eGFR)) %>%
+  group_by(treat_month) %>%
+  summarise(median = median(eGFR, na.rm = TRUE),
+            n= length(eGFR),
+            group="60 months")
+```
+
+#rbind data
+```{r}
+total_median_data <-
+  median_overall %>%
+  rbind(median_12) %>%
+  rbind(median_36) %>%
+  rbind(median_60)
+total_median_data$group  <- factor(total_median_data$group,levels = c("Overall","12 months","36 months","60 months"))
+```
+
+
+```{r} 
+panel_labs <- c(median_overall$n[1],median_12$n[1],median_36$n[1],median_60$n[1])
+p <-
+  ggline(total_median_data, "treat_month", "median",facet.by = "group",
+        plot_type = "l", xlab = "Months", ylab = "eGFR (ml/min per 1.73 m²)",
+        panel.labs = list(group = c(paste0("Overall (n=",panel_labs[1],")"), 
+                                    paste0("12 months (n=",panel_labs[2],")"),
+                                    paste0("36 months (n=",panel_labs[3],")"),
+                                    paste0("60 months (n=",panel_labs[4],")")))) 
+
+
+```
+
+## export to ppt
+###single pptx file👍
+```{r}
+library('ReporteRs')
+system("java -version")
+options( "ReporteRs-fontsize" = 12, 
+         "ReporteRs-default-font" = "Times")
+#准备footnote and plot
+
+#new pptx
+doc <- pptx()
+slide.layouts(doc)
+doc <- addSlide(doc, "Two Content")
+doc <- addPlot(doc,function()
+          print(p, newpage = FALSE), # Print the survival curves in the powerpoint
+          vector.graphic = TRUE)   # Make it editable
+writeDoc(doc, file = "figures/Median_eGFR.pptx")
+```
+
+

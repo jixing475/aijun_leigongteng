@@ -7,7 +7,6 @@ output:
     toc: true
     toc_float: yes
     toc_depth: 3
-
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
@@ -272,8 +271,8 @@ doc <- addFlexTable(doc, MyFTable)
 doc <- addParagraph(doc,T1_footnote_01)
 doc <- addParagraph(doc,T1_footnote_02)
 doc <- addParagraph(doc,T1_footnote_03)
-dir.create(here("docs/table"))
-writeDoc(doc, file = here("docs/table/TableOne.docx"))
+dir.create(here("output/table"))
+writeDoc(doc, file = here("output/table/TableOne.docx"))
 ```
 
 
