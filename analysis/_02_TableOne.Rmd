@@ -1,26 +1,31 @@
 ---
-title: "TMAO analysis"
+title: "Table One"
 author: "zero"
 date: "6/12/2017"
-output: html_document
----
+output: 
+  html_document:
+    toc: true
+    toc_float: yes
+    toc_depth: 3
 
+---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
-	echo = FALSE,
+	echo = TRUE,#show code and output
 	message = FALSE,
 	warning = FALSE,
-	results = "hide"
+	engine.path="/Users/zero/anaconda3/bin/python"
 )
 ```
-## library packages
+
+## Library packages
 ```{r}
 library(tidyverse)
 library(here)
 source(here("code/some_function.R"))
 ```
 
-###Load data:
+### Load data:
 
 ```{r load-data}
 load(here("data/TableOne_data.Rdata"))
@@ -28,7 +33,7 @@ data <- TableOne_data %>%
   dplyr::select(-other_disease)
 ```
 
-##Table one
+## Table one dataframe
 ```{r}
 #重排因子顺序
 data$group <- factor(data$group, levels = c("CR","PR","NR"))
@@ -217,8 +222,8 @@ result_table$Characteristic <- rownames(result_table)
 
 
 
-##data frame to word
-```{r}
+##Data frame to word
+```{r eval=FALSE, include=TRUE}
 library(ReporteRs)
 library(magrittr)
 

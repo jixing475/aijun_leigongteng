@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+<meta name="author" content="zero" />
+
+
+<title>Table One</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-4.5.0/css/font-awesome.min.css" rel="stylesheet" />
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+</script>
+
+<!-- code folding -->
+
+
+
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_').toLowerCase();
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+  padding-left: 25px;
+  text-indent: 0;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row-fluid">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">aijun_leigongteng</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/jdblischak/workflowr">
+    <span class="fa fa-github"></span>
+     
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">Table One</h1>
+<h4 class="author"><em>zero</em></h4>
+<h4 class="date"><em>6/12/2017</em></h4>
+
+</div>
+
+
+<p><strong>Last updated:</strong> 2018-05-10</p>
+<strong>workflowr checks:</strong> <small>(Click a bullet for more information)</small>
+<ul>
+<li>
+<p><details> <summary> <strong style="color:red;">✖</strong> <strong>R Markdown file:</strong> uncommitted changes </summary> The R Markdown file has unstaged changes. To know which version of the R Markdown file created these results, you’ll want to first commit it to the Git repo. If you’re still working on the analysis, you can ignore this warning. When you’re finished, you can run <code>wflow_publish</code> to commit the R Markdown file and build the HTML.</p>
+</details>
+</li>
+<li>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Environment:</strong> empty </summary></p>
+<p>Great job! The global environment was empty. Objects defined in the global environment can affect the analysis in your R Markdown file in unknown ways. For reproduciblity it’s best to always run the code in an empty environment.</p>
+</details>
+</li>
+<li>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Seed:</strong> <code>set.seed(20180510)</code> </summary></p>
+<p>The command <code>set.seed(20180510)</code> was run prior to running the code in the R Markdown file. Setting a seed ensures that any results that rely on randomness, e.g. subsampling or permutations, are reproducible.</p>
+</details>
+</li>
+<li>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Session information:</strong> recorded </summary></p>
+<p>Great job! Recording the operating system, R version, and package versions is critical for reproducibility.</p>
+</details>
+</li>
+<li>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/jixing475/aijun_leigongteng/tree/850934fb751140bad12c2162a18dcfe07f15d04e" target="_blank">850934f</a> </summary></p>
+Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
+<pre><code>
+Ignored files:
+    Ignored:    .DS_Store
+    Ignored:    .Rhistory
+    Ignored:    .Rproj.user/
+    Ignored:    data/.DS_Store
+    Ignored:    docs/.DS_Store
+
+Unstaged changes:
+    Modified:   analysis/_02_TableOne.Rmd
+
+</code></pre>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes. </details>
+</li>
+</ul>
+<details> <summary> <small><strong>Expand here to see past versions:</strong></small> </summary>
+<ul>
+<table style="border-collapse:separate; border-spacing:5px;">
+<thead>
+<tr>
+<th style="text-align:left;">
+File
+</th>
+<th style="text-align:left;">
+Version
+</th>
+<th style="text-align:left;">
+Author
+</th>
+<th style="text-align:left;">
+Date
+</th>
+<th style="text-align:left;">
+Message
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+Rmd
+</td>
+<td style="text-align:left;">
+<a href="https://github.com/jixing475/aijun_leigongteng/blob/87caa4daca18adb53b3f000a8a92504c72609195/analysis/_02_TableOne.Rmd" target="_blank">87caa4d</a>
+</td>
+<td style="text-align:left;">
+jixing475
+</td>
+<td style="text-align:left;">
+2018-05-10
+</td>
+<td style="text-align:left;">
+TableOne
+</td>
+</tr>
+</tbody>
+</table>
+</ul>
+<p></details></p>
+<hr />
+<div id="library-packages" class="section level2">
+<h2>Library packages</h2>
+<pre class="r"><code>library(tidyverse)
+library(here)
+source(here(&quot;code/some_function.R&quot;))</code></pre>
+<div id="load-data" class="section level3">
+<h3>Load data:</h3>
+<pre class="r"><code>load(here(&quot;data/TableOne_data.Rdata&quot;))
+data &lt;- TableOne_data %&gt;% 
+  dplyr::select(-other_disease)</code></pre>
+</div>
+</div>
+<div id="table-one-dataframe" class="section level2">
+<h2>Table one dataframe</h2>
+<pre class="r"><code>#重排因子顺序
+data$group &lt;- factor(data$group, levels = c(&quot;CR&quot;,&quot;PR&quot;,&quot;NR&quot;))
+fac &lt;- data$group
+
+#是否为正态分布
+vec_t_w &lt;- 
+  data %&gt;% 
+  get_num() %&gt;% 
+  t_or_w()
+
+#total summary  numeric variable
+data %&gt;%
+    get_num() %&gt;%
+    sapply(get_stat_num) -&gt; all
+
+#summary for group_1 &quot;CR&quot;
+data %&gt;%
+  filter(group == levels(fac)[1]) %&gt;%
+  get_num() %&gt;%
+  sapply(get_stat_mean) -&gt; a_mean
+data %&gt;%
+  filter(group == levels(fac)[1]) %&gt;%
+  get_num() %&gt;%
+  sapply(get_stat_median) -&gt; a_median
+
+#summary for group_2 &quot;PR&quot;
+data %&gt;%
+  filter(group == levels(fac)[2]) %&gt;%
+  get_num() %&gt;%
+  sapply(get_stat_mean) -&gt; b_mean
+data %&gt;%
+  filter(group == levels(fac)[2]) %&gt;%
+  get_num() %&gt;%
+  sapply(get_stat_median) -&gt; b_median
+
+#summary for group_3 &quot;NR&quot;
+data %&gt;%
+  filter(group == levels(fac)[3]) %&gt;%
+  get_num() %&gt;%
+  sapply(get_stat_mean) -&gt; c_mean
+data %&gt;%
+  filter(group == levels(fac)[3]) %&gt;%
+  get_num() %&gt;%
+  sapply(get_stat_median) -&gt; c_median
+
+#===== get p value==== 
+#CR vs PR
+data %&gt;%
+  filter(group != &quot;NR&quot;) %&gt;% 
+  get_num() %&gt;%
+  sapply(get_p, fac = fac[fac != &quot;NR&quot;]) -&gt; p_CR_vs_PR
+#CR vs NR
+data %&gt;%
+  filter(group != &quot;PR&quot;) %&gt;% 
+  get_num() %&gt;%
+  sapply(get_p, fac = fac[fac != &quot;PR&quot;]) -&gt; p_CR_vs_NR
+#PR vs NR
+data %&gt;%
+  filter(group != &quot;CR&quot;) %&gt;% 
+  get_num() %&gt;%
+  sapply(get_p, fac = fac[fac != &quot;CR&quot;]) -&gt; p_PR_vs_NR
+
+CR &lt;- if_else(vec_t_w, a_mean, a_median)
+PR &lt;- if_else(vec_t_w, b_mean, b_median)
+NR &lt;- if_else(vec_t_w, c_mean, c_median)
+result_num &lt;- cbind(all,CR, PR, NR, p_CR_vs_PR,p_CR_vs_NR, p_PR_vs_NR)
+
+#==== fac stat====
+#CR vs PR
+CR_vs_PR_p &lt;- 
+data %&gt;%
+  filter(group != &quot;NR&quot;) %&gt;% 
+  get_fac() %&gt;%
+  select(-group) %&gt;%
+  lapply(., get_stat_fac, fac = factor(fac[fac != &quot;NR&quot;],levels = c(&quot;CR&quot;,&quot;PR&quot;)))  %&gt;%
+  do.call(rbind, .)  %&gt;% 
+  .[[&quot;p_value&quot;]] %&gt;% 
+  .[!is.na(.)]
+
+#CR vs NR
+CR_vs_NR_p &lt;- 
+data %&gt;%
+  filter(group != &quot;PR&quot;) %&gt;% 
+  get_fac() %&gt;%
+  select(-group) %&gt;%
+  lapply(., get_stat_fac, fac = factor(fac[fac != &quot;PR&quot;],levels = c(&quot;CR&quot;,&quot;NR&quot;)))  %&gt;%
+  do.call(rbind, .)  %&gt;% 
+  .[[&quot;p_value&quot;]] %&gt;% 
+  .[!is.na(.)]
+
+#PR vs NR
+PR_vs_NR_p &lt;- 
+data %&gt;%
+  filter(group != &quot;CR&quot;) %&gt;% 
+  get_fac() %&gt;%
+  select(-group) %&gt;%
+  lapply(., get_stat_fac, fac = factor(fac[fac != &quot;CR&quot;],levels = c(&quot;PR&quot;,&quot;NR&quot;)))  %&gt;%
+  do.call(rbind, .)  %&gt;% 
+  .[[&quot;p_value&quot;]] %&gt;% 
+  .[!is.na(.)]
+
+
+fac_stat &lt;-
+  data %&gt;%
+  get_fac() %&gt;%
+  select(-group) %&gt;%
+  lapply(., get_stat_fac, fac = fac)  %&gt;%
+  do.call(rbind, .) 
+
+fac_stat$p_value &lt;- rep(fac_stat$p_value[!is.na(fac_stat$p_value)],
+    each=2)
+fac_stat &lt;-
+  fac_stat %&gt;%
+  mutate(row_name= rownames(.)) %&gt;% 
+  filter(x == &quot;1&quot; | x==&quot;female&quot;) %&gt;%
+  dplyr::select(-x) 
+
+fac_stat &lt;-
+  cbind(fac_stat, CR_vs_PR_p, CR_vs_NR_p, PR_vs_NR_p) %&gt;%
+  dplyr::select(row_name, Total, CR, PR, NR, CR_vs_PR_p, CR_vs_NR_p, PR_vs_NR_p)
+
+num_stat &lt;-
+  result_num %&gt;%
+  as.data.frame() %&gt;%
+  mutate(row_name = rownames(.)) %&gt;%
+  select(row_name, everything())
+colnames(num_stat) &lt;- colnames(fac_stat)
+
+#合并表格
+result_table  &lt;- 
+  rbind(fac_stat, num_stat)
+# a = CR vs PR
+# b = CR vs NR
+# c = PR vs NR
+
+result_table &lt;-
+  result_table %&gt;%
+  mutate(
+  CR_star = case_when(
+  CR_vs_PR_p &lt;= 0.05 &amp; CR_vs_NR_p &lt;= 0.05 ~ str_c(CR, &quot;a,b&quot;),
+  CR_vs_PR_p &lt;= 0.05 &amp; CR_vs_NR_p  &gt; 0.05 ~ str_c(CR, &quot;a&quot;),
+  CR_vs_PR_p  &gt; 0.05 &amp; CR_vs_NR_p &lt;= 0.05 ~ str_c(CR, &quot;b&quot;),
+  CR_vs_PR_p  &gt; 0.05 &amp; CR_vs_NR_p  &gt; 0.05 ~ CR
+  )
+  ) %&gt;%
+  mutate(PR_star = if_else(PR_vs_NR_p &lt;= 0.05, str_c(PR, &quot;b&quot;), PR)) %&gt;%
+  dplyr::select(row_name, Total, CR_star, PR_star, NR)
+  
+#修改列名 和 行名
+colnames(result_table) &lt;- c(
+  &quot;Characteristic&quot;,
+  str_c(&quot;Overall (n=&quot;, length(fac), &quot;)&quot;),
+  str_c(&quot;Complete Remission (n=&quot;, sum(fac == &quot;CR&quot;), &quot;)&quot;),
+  str_c(&quot;Partial Remission (n=&quot;, sum(fac == &quot;PR&quot;), &quot;)&quot;),
+  str_c(&quot;No Remission (n=&quot;, sum(fac == &quot;NR&quot;), &quot;)&quot;)
+  )
+#rowname
+rownames(result_table) &lt;- 
+  c(&quot;Female, n(%)&quot;,
+  &quot;History of smoke, n(%)&quot;,
+  &quot;History of drink n(%)&quot;,
+  &quot;Hypertension n(%)&quot;,
+  &quot;Diabetes n(%)&quot;,
+  &quot;Hepatitis B, n(%)&quot;,
+  &quot;History of hormone, n(%)&quot;,
+  &quot;History of CTX, n(%)&quot;,
+  &quot;History of CNI, n(%)&quot;,
+  &quot;History of MMC, n(%)&quot;,
+  &quot;History of Leflunomide, n(%)&quot;,
+  &quot;ACEI/ARB, n(%)&quot;,
+  &quot;Age (yr)&quot;,
+  &quot;Height (cm)&quot;,
+  &quot;Body weight (kg)&quot;,
+  &quot;NS course (m)&quot;,
+  &quot;Serum creatinine (mg/dl)&quot;,
+  &quot;CystatinC (mg/L)&quot;,
+  &quot;UA (umol/L)&quot;,
+  &quot;Cholesterol (mg/dl)&quot;,
+  &quot;Serum albumin (g/dl)&quot;,
+  &quot;Glucosuria （mmol/24h）&quot;,
+  &quot;proteinuria (g/24h)&quot;,
+  &quot;eGFR (ml/min per 1.73 m²)&quot;) 
+result_table$Characteristic &lt;- rownames(result_table)</code></pre>
+</div>
+<div id="data-frame-to-word" class="section level2">
+<h2>Data frame to word</h2>
+<pre class="r"><code>library(ReporteRs)
+library(magrittr)
+
+#set option
+options( &quot;ReporteRs-fontsize&quot; = 12, 
+         &quot;ReporteRs-default-font&quot; = &quot;Times&quot;)
+
+#=====准备文本和表格=====
+
+T1_title &lt;-
+  pot(&quot;Table 1. &quot;, textProperties(color = &quot;black&quot;, font.weight = &quot;bold&quot;)) +
+  &quot;Baseline characteristics of patients in the study group as a whole (overall) and in patients with complete, partial, or no remission or who received hormone and Tripterygium as therapy.&quot;
+  
+T1_footnote_01 &lt;-
+  &quot;Variables expressed as mean ± SD are compared using one-way ANOVA. Variables expressed as median (IQR) are compared using the Kruskal–Wallis test. Categorical variables are expressed in percentages and compared using the chi-squared test.&quot;
+
+T1_footnote_02 &lt;-
+  pot(&quot;a&quot;, textProperties(vertical.align = &quot;superscript&quot;)) +
+  pot(&quot;p&quot;, textProperties(font.style = &quot;italic&quot;)) +
+  &quot;&lt;0.05 versus partial remission.&quot;
+
+T1_footnote_03 &lt;-
+  pot(&quot;b&quot;, textProperties(vertical.align = &quot;superscript&quot;)) +
+  pot(&quot;p&quot;, textProperties(font.style = &quot;italic&quot;)) +
+  &quot;&lt;0.05 versus no remission.&quot;
+  
+TableOne &lt;- result_table # 🏃ass a dataframe 
+MyFTable &lt;- 
+TableOne%&gt;%
+    # 设置字体
+    FlexTable(header.cell.props = cellProperties( background.color = &quot;#DDDDDD&quot;),
+              header.text.props = textBold(color = &quot;black&quot;),
+              add.rownames = FALSE ) %&gt;%
+    #设置边界
+    setFlexTableBorders(inner.vertical = borderNone(),
+                        inner.horizontal = borderNone(),
+                        outer.vertical = borderNone(),
+                        outer.horizontal = borderProperties( color = &quot;black&quot;,style = &quot;solid&quot;, width = 2 )) %&gt;% 
+    #斑马线
+    setZebraStyle(odd = &quot;#FFFFFF&quot;, even = &quot;#FFFFFF&quot;)
+
+#写入 word
+doc &lt;- docx()
+doc &lt;- addParagraph(doc, T1_title)
+doc &lt;- addFlexTable(doc, MyFTable)
+doc &lt;- addParagraph(doc,T1_footnote_01)
+doc &lt;- addParagraph(doc,T1_footnote_02)
+doc &lt;- addParagraph(doc,T1_footnote_03)
+dir.create(here(&quot;docs/table&quot;))
+writeDoc(doc, file = here(&quot;docs/table/TableOne.docx&quot;))</code></pre>
+</div>
+<div id="session-information" class="section level2">
+<h2>Session information</h2>
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 3.4.4 Patched (2018-03-19 r74624)
+Platform: x86_64-apple-darwin15.6.0 (64-bit)
+Running under: macOS Sierra 10.12.6
+
+Matrix products: default
+BLAS: /Library/Frameworks/R.framework/Versions/3.4/Resources/lib/libRblas.0.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/3.4/Resources/lib/libRlapack.dylib
+
+locale:
+[1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] bindrcpp_0.2.2     here_0.1           forcats_0.3.0     
+ [4] stringr_1.3.0      dplyr_0.7.4        purrr_0.2.4       
+ [7] readr_1.1.1        tidyr_0.8.0        tibble_1.4.2      
+[10] ggplot2_2.2.1.9000 tidyverse_1.2.1   
+
+loaded via a namespace (and not attached):
+ [1] tidyselect_0.2.4  reshape2_1.4.3    haven_1.1.1      
+ [4] lattice_0.20-35   colorspace_1.3-2  htmltools_0.3.6  
+ [7] yaml_2.1.18       rlang_0.2.0.9001  R.oo_1.22.0      
+[10] pillar_1.2.2      withr_2.1.2       foreign_0.8-69   
+[13] glue_1.2.0        R.utils_2.6.0     modelr_0.1.1     
+[16] readxl_1.1.0      bindr_0.1.1       plyr_1.8.4       
+[19] munsell_0.4.3     gtable_0.2.0      workflowr_1.0.1  
+[22] cellranger_1.1.0  rvest_0.3.2       R.methodsS3_1.7.1
+[25] psych_1.8.4       evaluate_0.10.1   knitr_1.20       
+[28] parallel_3.4.4    broom_0.4.4       Rcpp_0.12.16     
+[31] backports_1.1.2   scales_0.5.0.9000 jsonlite_1.5     
+[34] mnormt_1.5-5      hms_0.4.2         digest_0.6.15    
+[37] stringi_1.2.2     grid_3.4.4        rprojroot_1.3-2  
+[40] cli_1.0.0         tools_3.4.4       magrittr_1.5     
+[43] lazyeval_0.2.1    crayon_1.3.4      whisker_0.3-2    
+[46] pkgconfig_2.0.1   xml2_1.2.0        lubridate_1.7.4  
+[49] assertthat_0.2.0  rmarkdown_1.9     httr_1.3.1       
+[52] R6_2.2.2          nlme_3.1-137      git2r_0.21.0     
+[55] compiler_3.4.4   </code></pre>
+</div>
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+http://docs.mathjax.org/en/latest/configuration.html.  This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+<hr>
+<p>
+  This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a>
+  analysis was created with
+  <a href="https://github.com/jdblischak/workflowr">workflowr</a> 1.0.1
+</p>
+<hr>
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
