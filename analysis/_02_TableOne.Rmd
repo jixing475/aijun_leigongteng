@@ -1,0 +1,275 @@
+---
+title: "TMAO analysis"
+author: "zero"
+date: "6/12/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE,
+	results = "hide"
+)
+```
+## library packages
+```{r}
+library(tidyverse)
+library(here)
+source(here("code/some_function.R"))
+```
+
+###Load data:
+
+```{r load-data}
+load(here("data/TableOne_data.Rdata"))
+data <- TableOne_data %>% 
+  dplyr::select(-other_disease)
+```
+
+##Table one
+```{r}
+#重排因子顺序
+data$group <- factor(data$group, levels = c("CR","PR","NR"))
+fac <- data$group
+
+#是否为正态分布
+vec_t_w <- 
+  data %>% 
+  get_num() %>% 
+  t_or_w()
+
+#total summary  numeric variable
+data %>%
+    get_num() %>%
+    sapply(get_stat_num) -> all
+
+#summary for group_1 "CR"
+data %>%
+  filter(group == levels(fac)[1]) %>%
+  get_num() %>%
+  sapply(get_stat_mean) -> a_mean
+data %>%
+  filter(group == levels(fac)[1]) %>%
+  get_num() %>%
+  sapply(get_stat_median) -> a_median
+
+#summary for group_2 "PR"
+data %>%
+  filter(group == levels(fac)[2]) %>%
+  get_num() %>%
+  sapply(get_stat_mean) -> b_mean
+data %>%
+  filter(group == levels(fac)[2]) %>%
+  get_num() %>%
+  sapply(get_stat_median) -> b_median
+
+#summary for group_3 "NR"
+data %>%
+  filter(group == levels(fac)[3]) %>%
+  get_num() %>%
+  sapply(get_stat_mean) -> c_mean
+data %>%
+  filter(group == levels(fac)[3]) %>%
+  get_num() %>%
+  sapply(get_stat_median) -> c_median
+
+#===== get p value==== 
+#CR vs PR
+data %>%
+  filter(group != "NR") %>% 
+  get_num() %>%
+  sapply(get_p, fac = fac[fac != "NR"]) -> p_CR_vs_PR
+#CR vs NR
+data %>%
+  filter(group != "PR") %>% 
+  get_num() %>%
+  sapply(get_p, fac = fac[fac != "PR"]) -> p_CR_vs_NR
+#PR vs NR
+data %>%
+  filter(group != "CR") %>% 
+  get_num() %>%
+  sapply(get_p, fac = fac[fac != "CR"]) -> p_PR_vs_NR
+
+CR <- if_else(vec_t_w, a_mean, a_median)
+PR <- if_else(vec_t_w, b_mean, b_median)
+NR <- if_else(vec_t_w, c_mean, c_median)
+result_num <- cbind(all,CR, PR, NR, p_CR_vs_PR,p_CR_vs_NR, p_PR_vs_NR)
+
+#==== fac stat====
+#CR vs PR
+CR_vs_PR_p <- 
+data %>%
+  filter(group != "NR") %>% 
+  get_fac() %>%
+  select(-group) %>%
+  lapply(., get_stat_fac, fac = factor(fac[fac != "NR"],levels = c("CR","PR")))  %>%
+  do.call(rbind, .)  %>% 
+  .[["p_value"]] %>% 
+  .[!is.na(.)]
+
+#CR vs NR
+CR_vs_NR_p <- 
+data %>%
+  filter(group != "PR") %>% 
+  get_fac() %>%
+  select(-group) %>%
+  lapply(., get_stat_fac, fac = factor(fac[fac != "PR"],levels = c("CR","NR")))  %>%
+  do.call(rbind, .)  %>% 
+  .[["p_value"]] %>% 
+  .[!is.na(.)]
+
+#PR vs NR
+PR_vs_NR_p <- 
+data %>%
+  filter(group != "CR") %>% 
+  get_fac() %>%
+  select(-group) %>%
+  lapply(., get_stat_fac, fac = factor(fac[fac != "CR"],levels = c("PR","NR")))  %>%
+  do.call(rbind, .)  %>% 
+  .[["p_value"]] %>% 
+  .[!is.na(.)]
+
+
+fac_stat <-
+  data %>%
+  get_fac() %>%
+  select(-group) %>%
+  lapply(., get_stat_fac, fac = fac)  %>%
+  do.call(rbind, .) 
+
+fac_stat$p_value <- rep(fac_stat$p_value[!is.na(fac_stat$p_value)],
+    each=2)
+fac_stat <-
+  fac_stat %>%
+  mutate(row_name= rownames(.)) %>% 
+  filter(x == "1" | x=="female") %>%
+  dplyr::select(-x) 
+
+fac_stat <-
+  cbind(fac_stat, CR_vs_PR_p, CR_vs_NR_p, PR_vs_NR_p) %>%
+  dplyr::select(row_name, Total, CR, PR, NR, CR_vs_PR_p, CR_vs_NR_p, PR_vs_NR_p)
+
+num_stat <-
+  result_num %>%
+  as.data.frame() %>%
+  mutate(row_name = rownames(.)) %>%
+  select(row_name, everything())
+colnames(num_stat) <- colnames(fac_stat)
+
+#合并表格
+result_table  <- 
+  rbind(fac_stat, num_stat)
+# a = CR vs PR
+# b = CR vs NR
+# c = PR vs NR
+
+result_table <-
+  result_table %>%
+  mutate(
+  CR_star = case_when(
+  CR_vs_PR_p <= 0.05 & CR_vs_NR_p <= 0.05 ~ str_c(CR, "a,b"),
+  CR_vs_PR_p <= 0.05 & CR_vs_NR_p  > 0.05 ~ str_c(CR, "a"),
+  CR_vs_PR_p  > 0.05 & CR_vs_NR_p <= 0.05 ~ str_c(CR, "b"),
+  CR_vs_PR_p  > 0.05 & CR_vs_NR_p  > 0.05 ~ CR
+  )
+  ) %>%
+  mutate(PR_star = if_else(PR_vs_NR_p <= 0.05, str_c(PR, "b"), PR)) %>%
+  dplyr::select(row_name, Total, CR_star, PR_star, NR)
+  
+#修改列名 和 行名
+colnames(result_table) <- c(
+  "Characteristic",
+  str_c("Overall (n=", length(fac), ")"),
+  str_c("Complete Remission (n=", sum(fac == "CR"), ")"),
+  str_c("Partial Remission (n=", sum(fac == "PR"), ")"),
+  str_c("No Remission (n=", sum(fac == "NR"), ")")
+  )
+#rowname
+rownames(result_table) <- 
+  c("Female, n(%)",
+  "History of smoke, n(%)",
+  "History of drink n(%)",
+  "Hypertension n(%)",
+  "Diabetes n(%)",
+  "Hepatitis B, n(%)",
+  "History of hormone, n(%)",
+  "History of CTX, n(%)",
+  "History of CNI, n(%)",
+  "History of MMC, n(%)",
+  "History of Leflunomide, n(%)",
+  "ACEI/ARB, n(%)",
+  "Age (yr)",
+  "Height (cm)",
+  "Body weight (kg)",
+  "NS course (m)",
+  "Serum creatinine (mg/dl)",
+  "CystatinC (mg/L)",
+  "UA (umol/L)",
+  "Cholesterol (mg/dl)",
+  "Serum albumin (g/dl)",
+  "Glucosuria （mmol/24h）",
+  "proteinuria (g/24h)",
+  "eGFR (ml/min per 1.73 m²)") 
+result_table$Characteristic <- rownames(result_table)
+```
+
+
+
+##data frame to word
+```{r}
+library(ReporteRs)
+library(magrittr)
+
+#set option
+options( "ReporteRs-fontsize" = 12, 
+         "ReporteRs-default-font" = "Times")
+
+#=====准备文本和表格=====
+
+T1_title <-
+  pot("Table 1. ", textProperties(color = "black", font.weight = "bold")) +
+  "Baseline characteristics of patients in the study group as a whole (overall) and in patients with complete, partial, or no remission or who received hormone and Tripterygium as therapy."
+  
+T1_footnote_01 <-
+  "Variables expressed as mean ± SD are compared using one-way ANOVA. Variables expressed as median (IQR) are compared using the Kruskal–Wallis test. Categorical variables are expressed in percentages and compared using the chi-squared test."
+
+T1_footnote_02 <-
+  pot("a", textProperties(vertical.align = "superscript")) +
+  pot("p", textProperties(font.style = "italic")) +
+  "<0.05 versus partial remission."
+
+T1_footnote_03 <-
+  pot("b", textProperties(vertical.align = "superscript")) +
+  pot("p", textProperties(font.style = "italic")) +
+  "<0.05 versus no remission."
+  
+TableOne <- result_table # 🏃ass a dataframe 
+MyFTable <- 
+TableOne%>%
+    # 设置字体
+    FlexTable(header.cell.props = cellProperties( background.color = "#DDDDDD"),
+              header.text.props = textBold(color = "black"),
+              add.rownames = FALSE ) %>%
+    #设置边界
+    setFlexTableBorders(inner.vertical = borderNone(),
+                        inner.horizontal = borderNone(),
+                        outer.vertical = borderNone(),
+                        outer.horizontal = borderProperties( color = "black",style = "solid", width = 2 )) %>% 
+    #斑马线
+    setZebraStyle(odd = "#FFFFFF", even = "#FFFFFF")
+
+#写入 word
+doc <- docx()
+doc <- addParagraph(doc, T1_title)
+doc <- addFlexTable(doc, MyFTable)
+doc <- addParagraph(doc,T1_footnote_01)
+doc <- addParagraph(doc,T1_footnote_02)
+doc <- addParagraph(doc,T1_footnote_03)
+dir.create(here("docs/table"))
+writeDoc(doc, file = here("docs/table/TableOne.docx"))
+```
+
+
+
