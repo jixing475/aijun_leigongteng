@@ -18,12 +18,13 @@ library(flextable)
 library(ggpubr)
 library('ReporteRs')
 library(Cairo)
-source("../02_scripts/some_function.R")
+library(here)
+source(here("code/some_function.R"))
 ```
 
 ##load data
 ```{r}
-load("../01_data/clean_data.RData")
+load(here("data/clean_data.RData"))
 ```
 
 ```{r}
@@ -37,12 +38,21 @@ bind_unit <-
   )
 ```
 
+## 🔥 flow up
+```{r}
+flow_up <- 
+  flow_up %>% 
+  filter(flow_up$rep_id!="45") %>%
+  filter(!rep_id %in% c("56", "81")) 
+```
+
 # urine_protein
 ```{r}
 #overall
 median_overall <- 
   flow_up %>% 
   filter(flow_up$rep_id!="45") %>% #45 号病人的随访情况太少
+  filter(!rep_id %in% c("56", "81")) %>% #🔥 
   filter(!is.na(urine_protein)) %>% 
   group_by(treat_month) %>% 
   summarise(median= median(urine_protein, na.rm = TRUE),
@@ -127,7 +137,7 @@ doc <- addSlide(doc, "Two Content")
 doc <- addPlot(doc,function()
           print(p, newpage = FALSE), # Print the survival curves in the powerpoint
           vector.graphic = TRUE)   # Make it editable
-writeDoc(doc, file = "figures/Median_24_Hour_Urinary_Protein_Excretion.pptx")
+writeDoc(doc, file = here("output/figures/Median_24_Hour_Urinary_Protein_Excretion.pptx"))
 ```
 
 

@@ -60,7 +60,8 @@ surv_CPR <-
   )) %>% 
   mutate(status = if_else(group == "NR", 1, 2)) %>% 
   mutate(surv_group="Complete or Partial remission") %>% 
-  filter(id!="45")
+  filter(id!="45") %>% 
+  filter(!id %in% c("56", "81"))#🔥 
 
 #CR 
 surv_CR <-
@@ -77,7 +78,8 @@ surv_CR <-
     group == "NR" ~ flow_time))%>% 
   mutate(status = if_else(group == "CR", 2, 1)) %>% 
   mutate(surv_group="Complete remission") %>% 
-  filter(id!="45")
+  filter(id!="45") %>% 
+  filter(!id %in% c("56", "81"))#🔥 
 
 #PR 
 surv_PR <-
@@ -94,7 +96,8 @@ surv_PR <-
     group == "NR" ~ flow_time))%>% 
   mutate(status = if_else(group == "PR", 2, 1)) %>% 
   mutate(surv_group="Partial remission") %>% 
-  filter(id!="45")
+  filter(id!="45") %>% 
+  filter(!id %in% c("56", "81"))#🔥 
 
 #relapse
 relapse <- 
@@ -111,7 +114,8 @@ data.frame(
     group == "other" ~ flow_time))%>% 
   mutate(status = if_else(group == "relapse", 2, 1)) %>% 
   mutate(surv_group="Relapse") %>% 
-  filter(id!="45")
+  filter(id!="45") %>% 
+  filter(!id %in% c("56", "81"))#🔥 
 
 
 

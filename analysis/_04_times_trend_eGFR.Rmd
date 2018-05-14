@@ -18,12 +18,13 @@ library(flextable)
 library(ggpubr)
 library('ReporteRs')
 library(Cairo)
-source("../02_scripts/some_function.R")
+library(here)
+source(here("code/some_function.R"))
 ```
 
 ##load data
 ```{r}
-load("../01_data/clean_data.RData")
+load(here("data/clean_data.RData"))
 ```
 
 ```{r}
@@ -55,7 +56,8 @@ flow_up <-
   ) %>%
   full_join(flow_up, by = c("rep_id", "treat_month"))  %>% 
   filter(!is.na(SCreatinine)) %>% 
-  filter(rep_id!="45")
+  filter(rep_id!="45") %>% 
+  filter(!rep_id %in% c("56", "81"))#🔥 
 
 flow_up$eGFR   <-
   clinPK::calc_egfr(
@@ -162,7 +164,7 @@ doc <- addSlide(doc, "Two Content")
 doc <- addPlot(doc,function()
           print(p, newpage = FALSE), # Print the survival curves in the powerpoint
           vector.graphic = TRUE)   # Make it editable
-writeDoc(doc, file = "figures/Median_eGFR.pptx")
+writeDoc(doc, file = here("output/figures/Median_eGFR.pptx"))
 ```
 
 

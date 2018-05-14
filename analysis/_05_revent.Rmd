@@ -16,12 +16,13 @@ _Correlation matrix analysis is very useful to study dependences or associations
 library(tidyverse)
 library(flextable)
 library(ggpubr)
+library(here)
 ```
 
 ##load data
 ```{r}
-load("../01_data/clean_data.RData")
-source("../02_scripts/some_function.R")
+load(here("data/clean_data.RData"))
+source(here("code/some_function.R"))
 ```
 
 #create advent
@@ -170,6 +171,14 @@ advent <- tibble::tribble(
 #join
 ```{r}
 advent$id <- as.character(advent$id)
+#🔥
+advent <- 
+  advent %>% 
+  filter(!id %in% c("56","81"))
+group <- 
+  group %>% 
+  filter(!id %in% c("56","81"))
+
 ad_vent <-
   dplyr::full_join(advent, group, by = "id") %>%
   select(id, advent, group) %>%
@@ -238,10 +247,13 @@ TableOne%>%
     #斑马线
     setZebraStyle(odd = "#FFFFFF", even = "#FFFFFF")
 
+
+MyFTable[,2:dim(TableOne)[2]] = parProperties(text.align = 'center', padding = 3 )
+  
 #写入 word
 doc <- docx()
 doc <- addParagraph(doc, T1_title)
 doc <- addFlexTable(doc, MyFTable)
-writeDoc(doc, file = "../03_analysis/table/adverse_event.docx")
+writeDoc(doc, file = here("output/table/adverse_event.docx"))
 ```
 
