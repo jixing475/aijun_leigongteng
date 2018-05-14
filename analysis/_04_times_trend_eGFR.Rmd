@@ -1,5 +1,5 @@
 ---
-title: "figures"
+title: "Figures"
 output: github_document
 ---
 
